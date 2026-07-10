@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent-sky-50: #f0f9ff;
+  --accent-sky-100: #e0f2fe;
+  --accent-sky-200: #bae6fd;
+  --accent-sky-300: #7dd3fc;
+  --accent-sky-400: #38bdf8;
+  --accent-sky-500: #0ea5e9;
+  --accent-sky-600: #0284c7;
+  --accent-sky-700: #0369a1;
+  --accent-sky-800: #075985;
+  --accent-sky-900: #0c4a6e;
+
+  --accent-emerald-50: #ecfdf5;
+  --accent-emerald-100: #d1fae5;
+  --accent-emerald-200: #a7f3d0;
+  --accent-emerald-300: #6ee7b7;
+  --accent-emerald-400: #34d399;
+  --accent-emerald-500: #10b981;
+  --accent-emerald-600: #059669;
+  --accent-emerald-700: #047857;
+  --accent-emerald-800: #065f46;
+  --accent-emerald-900: #064e3b;
+
+  --accent-amber-50: #fffbeb;
+  --accent-amber-100: #fef3c7;
+  --accent-amber-200: #fde68a;
+  --accent-amber-300: #fcd34d;
+  --accent-amber-400: #fbbf24;
+  --accent-amber-500: #f59e0b;
+  --accent-amber-600: #d97706;
+  --accent-amber-700: #b45309;
+  --accent-amber-800: #92400e;
+  --accent-amber-900: #78350f;
+
+  --accent-rose-50: #fff1f2;
+  --accent-rose-100: #ffe4e6;
+  --accent-rose-200: #fecdd3;
+  --accent-rose-300: #fda4af;
+  --accent-rose-400: #fb7185;
+  --accent-rose-500: #f43f5e;
+  --accent-rose-600: #e11d48;
+  --accent-rose-700: #be123c;
+  --accent-rose-800: #9f1239;
+  --accent-rose-900: #881337;
+
+  --accent-cyan-50: #ecfeff;
+  --accent-cyan-100: #cffafe;
+  --accent-cyan-200: #a5f3fc;
+  --accent-cyan-300: #67e8f9;
+  --accent-cyan-400: #22d3ee;
+  --accent-cyan-500: #06b6d4;
+  --accent-cyan-600: #0891b2;
+  --accent-cyan-700: #0e7490;
+  --accent-cyan-800: #155e75;
+  --accent-cyan-900: #164e63;
+
+  --accent-violet-50: #f5f3ff;
+  --accent-violet-100: #ede9fe;
+  --accent-violet-200: #ddd6fe;
+  --accent-violet-300: #c4b5fd;
+  --accent-violet-400: #a78bfa;
+  --accent-violet-500: #8b5cf6;
+  --accent-violet-600: #7c3aed;
+  --accent-violet-700: #6d28d9;
+  --accent-violet-800: #5b21b6;
+  --accent-violet-900: #4c1d95;
+}
+
+.accent-sky {
+  --accent-50: var(--accent-sky-50); --accent-100: var(--accent-sky-100);
+  --accent-200: var(--accent-sky-200); --accent-300: var(--accent-sky-300);
+  --accent-400: var(--accent-sky-400); --accent-500: var(--accent-sky-500);
+  --accent-600: var(--accent-sky-600); --accent-700: var(--accent-sky-700);
+  --accent-800: var(--accent-sky-800); --accent-900: var(--accent-sky-900);
+}
+.accent-emerald {
+  --accent-50: var(--accent-emerald-50); --accent-100: var(--accent-emerald-100);
+  --accent-200: var(--accent-emerald-200); --accent-300: var(--accent-emerald-300);
+  --accent-400: var(--accent-emerald-400); --accent-500: var(--accent-emerald-500);
+  --accent-600: var(--accent-emerald-600); --accent-700: var(--accent-emerald-700);
+  --accent-800: var(--accent-emerald-800); --accent-900: var(--accent-emerald-900);
+}
+.accent-amber {
+  --accent-50: var(--accent-amber-50); --accent-100: var(--accent-amber-100);
+  --accent-200: var(--accent-amber-200); --accent-300: var(--accent-amber-300);
+  --accent-400: var(--accent-amber-400); --accent-500: var(--accent-amber-500);
+  --accent-600: var(--accent-amber-600); --accent-700: var(--accent-amber-700);
+  --accent-800: var(--accent-amber-800); --accent-900: var(--accent-amber-900);
+}
+.accent-rose {
+  --accent-50: var(--accent-rose-50); --accent-100: var(--accent-rose-100);
+  --accent-200: var(--accent-rose-200); --accent-300: var(--accent-rose-300);
+  --accent-400: var(--accent-rose-400); --accent-500: var(--accent-rose-500);
+  --accent-600: var(--accent-rose-600); --accent-700: var(--accent-rose-700);
+  --accent-800: var(--accent-rose-800); --accent-900: var(--accent-rose-900);
+}
+.accent-cyan {
+  --accent-50: var(--accent-cyan-50); --accent-100: var(--accent-cyan-100);
+  --accent-200: var(--accent-cyan-200); --accent-300: var(--accent-cyan-300);
+  --accent-400: var(--accent-cyan-400); --accent-500: var(--accent-cyan-500);
+  --accent-600: var(--accent-cyan-600); --accent-700: var(--accent-cyan-700);
+  --accent-800: var(--accent-cyan-800); --accent-900: var(--accent-cyan-900);
+}
+.accent-violet {
+  --accent-50: var(--accent-violet-50); --accent-100: var(--accent-violet-100);
+  --accent-200: var(--accent-violet-200); --accent-300: var(--accent-violet-300);
+  --accent-400: var(--accent-violet-400); --accent-500: var(--accent-violet-500);
+  --accent-600: var(--accent-violet-600); --accent-700: var(--accent-violet-700);
+  --accent-800: var(--accent-violet-800); --accent-900: var(--accent-violet-900);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+::selection {
+  background: var(--accent-400);
+  color: white;
+}
+
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.glass {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+.glass-light {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.window-shadow {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
