@@ -48,6 +48,8 @@ const APP_DEFAULTS: Record<AppId, { title: string; icon: string; width: number; 
   sysmon: { title: 'System Monitor', icon: 'Activity', width: 680, height: 520 },
   music: { title: 'Music', icon: 'Music', width: 480, height: 560 },
   about: { title: 'About WendelOS', icon: 'Info', width: 480, height: 540 },
+  store: { title: 'App Store', icon: 'Store', width: 860, height: 580 },
+  webapp: { title: 'Web App', icon: 'Globe', width: 1000, height: 680 },
 };
 
 let zCounter = 100;

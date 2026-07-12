@@ -20,21 +20,37 @@ import CalendarApp from './apps/CalendarApp';
 import SystemMonitorApp from './apps/SystemMonitorApp';
 import MusicPlayerApp from './apps/MusicPlayerApp';
 import AboutApp from './apps/AboutApp';
+import StoreApp from './apps/StoreApp';
+import WebAppViewer from './apps/WebAppViewer';
 
 function renderApp(appId: AppId, payload?: Record<string, unknown>) {
   switch (appId) {
-    case 'files': return <FilesApp />;
-    case 'notes': return <NotesApp />;
-    case 'editor': return <EditorApp payload={payload} />;
+    case 'files':      return <FilesApp />;
+    case 'notes':      return <NotesApp />;
+    case 'editor':     return <EditorApp payload={payload} />;
     case 'calculator': return <CalculatorApp />;
-    case 'terminal': return <TerminalApp />;
-    case 'settings': return <SettingsApp />;
-    case 'browser': return <BrowserApp />;
-    case 'calendar': return <CalendarApp />;
-    case 'sysmon': return <SystemMonitorApp />;
-    case 'music': return <MusicPlayerApp />;
-    case 'about': return <AboutApp />;
-    default: return null;
+    case 'terminal':   return <TerminalApp />;
+    case 'settings':   return <SettingsApp />;
+    case 'browser':    return <BrowserApp />;
+    case 'calendar':   return <CalendarApp />;
+    case 'sysmon':     return <SystemMonitorApp />;
+    case 'music':      return <MusicPlayerApp />;
+    case 'about':      return <AboutApp />;
+    case 'store':      return <StoreApp />;
+    case 'webapp':
+      if (payload?.url) {
+        return (
+          <WebAppViewer
+            url={payload.url as string}
+            name={payload.name as string ?? 'Web App'}
+            icon={payload.icon as string ?? 'Globe'}
+            color={payload.color as string ?? 'from-sky-400 to-sky-600'}
+          />
+        );
+      }
+      return <BrowserApp />;
+    default:
+      return null;
   }
 }
 

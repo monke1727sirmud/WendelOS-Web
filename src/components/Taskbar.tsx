@@ -9,7 +9,8 @@ import {
 import { useWindowManager } from '../context/WindowManagerContext';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import type { AppId } from '../lib/types';
+import { supabase } from '../lib/supabase';
+import type { AppId, InstalledApp } from '../lib/types';
 
 type IconName = keyof typeof LucideIcons;
 type IconType = ComponentType<{ className?: string }>;
@@ -28,6 +29,7 @@ const APPS: AppEntry[] = [
   { id: 'music',      label: 'Music',          icon: 'Music',          gradient: 'from-pink-400 to-rose-500' },
   { id: 'settings',   label: 'Settings',       icon: 'Settings',       gradient: 'from-slate-500 to-slate-700' },
   { id: 'about',      label: 'About',          icon: 'Info',           gradient: 'from-cyan-400 to-cyan-600' },
+  { id: 'store',      label: 'App Store',      icon: 'Store',          gradient: 'from-cyan-400 to-blue-500' },
 ];
 
 const DOCK_APPS = APPS.slice(0, 8);
@@ -60,8 +62,19 @@ export default function Taskbar() {
   const [volume, setVolume] = useState(65);
   const [wifiOn, setWifiOn] = useState(true);
   const [btOn, setBtOn] = useState(false);
+  const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const battery = useBattery();
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadInstalled = async () => {
+      const { data } = await supabase.from('installed_apps').select('*').order('installed_at');
+      if (data) setInstalledApps(data as InstalledApp[]);
+    };
+    void loadInstalled();
+    window.addEventListener('focus', loadInstalled);
+    return () => window.removeEventListener('focus', loadInstalled);
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -80,7 +93,11 @@ export default function Taskbar() {
 
   const filtered = APPS.filter(a => a.label.toLowerCase().includes(search.toLowerCase()));
   const initial = username?.[0]?.toUpperCase() ?? '?';
-  const openOne = (id: AppId) => { openApp(id); setStartOpen(false); setSearch(''); };
+  const openOne = (id: AppId, payload?: Record<string, unknown>) => {
+    openApp(id, payload ? { payload, title: payload.name as string, icon: payload.icon as string, width: 1000, height: 680 } : undefined);
+    setStartOpen(false);
+    setSearch('');
+  };
 
   return (
     <>
@@ -164,9 +181,25 @@ export default function Taskbar() {
                       {APPS.slice(8).map(app => {
                         const Icon = (LucideIcons[app.icon as IconName] ?? LucideIcons.AppWindow) as IconType;
                         return (
-                          <button key={app.id} onClick={() => openOne(app.id)}
+                          <button key={app.id} onClick={() => openOne(app.id as AppId)}
                             className="flex items-center gap-1.5 rounded-lg border border-white/8 px-2.5 py-1.5 text-[11px] text-white/50 transition hover:bg-white/8 hover:text-white/80">
                             <Icon className="h-3.5 w-3.5" />{app.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {installedApps.length > 0 && (
+                  <div className="mt-3 border-t border-white/8 pt-3">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/25">Installed Apps</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {installedApps.map(app => {
+                        const Icon = (LucideIcons[app.icon as IconName] ?? LucideIcons.Globe) as IconType;
+                        return (
+                          <button key={app.id} onClick={() => openOne('webapp', { url: app.url, name: app.name, icon: app.icon, color: app.color })}
+                            className="flex items-center gap-1.5 rounded-lg border border-white/8 px-2.5 py-1.5 text-[11px] text-white/50 transition hover:bg-white/8 hover:text-white/80">
+                            <Icon className="h-3.5 w-3.5" />{app.name}
                           </button>
                         );
                       })}
