@@ -5,19 +5,25 @@ import type { AppId } from '../lib/types';
 
 type IconName = keyof typeof LucideIcons;
 
-interface DesktopIcon { id: AppId; label: string; icon: string; }
+interface DesktopIcon {
+  id: AppId;
+  label: string;
+  icon: string;
+  gradient: string;
+  shadow: string;
+}
 
 const DESKTOP_ICONS: DesktopIcon[] = [
-  { id: 'files',      label: 'Files',          icon: 'Folder' },
-  { id: 'browser',    label: 'Browser',        icon: 'Globe' },
-  { id: 'terminal',   label: 'Terminal',       icon: 'TerminalSquare' },
-  { id: 'editor',     label: 'Text Editor',    icon: 'FileText' },
-  { id: 'notes',      label: 'Notes',          icon: 'StickyNote' },
-  { id: 'calculator', label: 'Calculator',     icon: 'Calculator' },
-  { id: 'sysmon',     label: 'System Monitor', icon: 'Activity' },
-  { id: 'music',      label: 'Music',          icon: 'Music' },
-  { id: 'calendar',   label: 'Calendar',       icon: 'Calendar' },
-  { id: 'settings',   label: 'Settings',       icon: 'Settings' },
+  { id: 'files',      label: 'Files',          icon: 'Folder',        gradient: 'from-sky-400 to-sky-600',       shadow: 'shadow-sky-500/40' },
+  { id: 'browser',    label: 'Browser',        icon: 'Globe',         gradient: 'from-blue-400 to-blue-600',     shadow: 'shadow-blue-500/40' },
+  { id: 'terminal',   label: 'Terminal',       icon: 'TerminalSquare',gradient: 'from-emerald-400 to-emerald-700', shadow: 'shadow-emerald-500/40' },
+  { id: 'editor',     label: 'Text Editor',    icon: 'FileText',      gradient: 'from-amber-400 to-orange-600',  shadow: 'shadow-amber-500/40' },
+  { id: 'notes',      label: 'Notes',          icon: 'StickyNote',    gradient: 'from-yellow-400 to-amber-500',  shadow: 'shadow-yellow-500/40' },
+  { id: 'calculator', label: 'Calculator',     icon: 'Calculator',    gradient: 'from-slate-400 to-slate-600',   shadow: 'shadow-slate-500/30' },
+  { id: 'sysmon',     label: 'System Monitor', icon: 'Activity',      gradient: 'from-red-400 to-rose-600',      shadow: 'shadow-red-500/40' },
+  { id: 'music',      label: 'Music',          icon: 'Music',         gradient: 'from-pink-400 to-rose-500',     shadow: 'shadow-pink-500/40' },
+  { id: 'calendar',   label: 'Calendar',       icon: 'Calendar',      gradient: 'from-red-400 to-red-600',       shadow: 'shadow-red-500/40' },
+  { id: 'settings',   label: 'Settings',       icon: 'Settings',      gradient: 'from-slate-500 to-slate-700',   shadow: 'shadow-slate-500/30' },
 ];
 
 interface ContextMenu { x: number; y: number; iconId: AppId | null; }
@@ -26,7 +32,6 @@ export default function Desktop() {
   const { openApp } = useWindowManager();
   const [selected, setSelected] = useState<string | null>(null);
   const [ctx, setCtx] = useState<ContextMenu | null>(null);
-  const desktopRef = useRef<HTMLDivElement>(null);
   const ctxRef = useRef<HTMLDivElement>(null);
 
   const handleDesktopClick = useCallback((e: MouseEvent) => {
@@ -46,13 +51,12 @@ export default function Desktop() {
 
   return (
     <div
-      ref={desktopRef}
       className="absolute inset-0"
       style={{ top: 28, bottom: 76 }}
       onContextMenu={(e) => handleContextMenu(e, null)}
     >
-      {/* Icon grid — top-left, flowing down then right */}
-      <div className="absolute top-0 left-0 flex flex-col flex-wrap gap-1 p-3" style={{ maxHeight: '100%' }}>
+      {/* Desktop icon grid — macOS top-left flow */}
+      <div className="absolute top-0 left-0 flex flex-col flex-wrap gap-1 p-4" style={{ maxHeight: '100%' }}>
         {DESKTOP_ICONS.map((icon) => {
           const Icon = (LucideIcons[icon.icon as IconName] ?? LucideIcons.AppWindow) as React.ComponentType<{ className?: string }>;
           const isSel = selected === icon.id;
@@ -63,28 +67,30 @@ export default function Desktop() {
               onClick={() => setSelected(icon.id)}
               onDoubleClick={() => openApp(icon.id)}
               onContextMenu={(e) => handleContextMenu(e, icon.id)}
-              className={`group flex w-[76px] flex-col items-center gap-1.5 rounded-xl p-2 transition-all ${
-                isSel ? 'bg-accent-500/20 ring-1 ring-accent-500/40' : 'hover:bg-white/8'
+              className={`group flex w-[76px] flex-col items-center gap-1.5 rounded-xl p-2 transition-all select-none ${
+                isSel ? 'bg-white/12' : 'hover:bg-white/6'
               }`}
             >
-              {/* macOS-style icon with gradient bg */}
-              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg transition-all group-hover:scale-105 group-hover:shadow-xl ${
-                isSel
-                  ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-accent-500/40'
-                  : 'bg-gradient-to-br from-slate-700/80 to-slate-800/80 text-slate-200 group-hover:from-slate-600/80 group-hover:to-slate-700/80'
-              }`}
+              {/* Per-app colored icon */}
+              <div
+                className={`flex h-14 w-14 items-center justify-center rounded-[18px] bg-gradient-to-br shadow-lg transition-all duration-150 group-hover:scale-110 group-hover:-translate-y-0.5 group-active:scale-95 ${icon.gradient} ${icon.shadow} ${
+                  isSel ? 'scale-105 brightness-110' : ''
+                }`}
                 style={{
-                  backdropFilter: 'blur(12px)',
                   boxShadow: isSel
-                    ? '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)'
-                    : '0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)'
+                    ? `0 6px 20px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25)`
+                    : `0 4px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2)`,
                 }}
               >
-                <Icon className="h-7 w-7" />
+                <Icon className="h-7 w-7 text-white drop-shadow-sm" />
               </div>
+
+              {/* Label — Windows style with text shadow */}
               <span
-                className={`text-center text-[11px] font-medium leading-tight w-full ${isSel ? 'text-white' : 'text-white/90'}`}
-                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}
+                className={`text-center text-[11px] font-medium leading-tight w-full px-0.5 rounded transition-colors ${
+                  isSel ? 'bg-accent-500/60 text-white' : 'text-white/90'
+                }`}
+                style={{ textShadow: isSel ? 'none' : '0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7)' }}
               >
                 {icon.label}
               </span>
@@ -93,63 +99,68 @@ export default function Desktop() {
         })}
       </div>
 
-      {/* Right-click context menu — Linux/Windows hybrid */}
+      {/* Context menu — Windows/Linux hybrid */}
       {ctx && (
         <div
           ref={ctxRef}
           data-ctx-menu
-          className="fixed z-[9000] w-52 overflow-hidden rounded-xl border border-white/12 bg-slate-900/95 py-1 shadow-2xl backdrop-blur-2xl animate-scale-in"
+          className="fixed z-[9000] w-52 overflow-hidden rounded-xl border border-white/10 py-1 shadow-2xl animate-scale-in"
           style={{
             left: Math.min(ctx.x, window.innerWidth - 224),
-            top: Math.min(ctx.y, window.innerHeight - 200),
+            top: Math.min(ctx.y, window.innerHeight - 220),
+            background: 'rgba(28,28,32,0.97)',
+            backdropFilter: 'blur(40px) saturate(180%)',
           }}
         >
           {ctx.iconId ? (
             <>
-              <button onClick={() => { openApp(ctx.iconId!); setCtx(null); }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 transition">
-                <LucideIcons.ExternalLink className="h-4 w-4 text-slate-400" />
-                Open
-              </button>
-              <button onClick={() => { openApp(ctx.iconId!); setCtx(null); }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 transition">
-                <LucideIcons.AppWindow className="h-4 w-4 text-slate-400" />
-                Open in new window
-              </button>
+              <div className="px-3 py-1.5 border-b border-white/8 mb-1">
+                <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">
+                  {DESKTOP_ICONS.find(i => i.id === ctx.iconId)?.label}
+                </p>
+              </div>
+              <CtxItem icon={LucideIcons.ExternalLink} label="Open" onClick={() => { openApp(ctx.iconId!); setCtx(null); }} />
+              <CtxItem icon={LucideIcons.AppWindow} label="Open in New Window" onClick={() => { openApp(ctx.iconId!); setCtx(null); }} />
               <div className="my-1 border-t border-white/8" />
-              <button onClick={() => setCtx(null)}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-400 hover:bg-white/8 transition">
-                <LucideIcons.Info className="h-4 w-4" />
-                Properties
-              </button>
+              <CtxItem icon={LucideIcons.Info} label="Properties" onClick={() => setCtx(null)} muted />
             </>
           ) : (
             <>
-              <button onClick={() => { openApp('settings'); setCtx(null); }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 transition">
-                <LucideIcons.Settings className="h-4 w-4 text-slate-400" />
-                Display Settings
-              </button>
-              <button onClick={() => setCtx(null)}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 transition">
-                <LucideIcons.RefreshCw className="h-4 w-4 text-slate-400" />
-                Refresh Desktop
-              </button>
+              <div className="px-3 py-1.5 border-b border-white/8 mb-1">
+                <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Desktop</p>
+              </div>
+              <CtxItem icon={LucideIcons.Settings} label="Display Settings" onClick={() => { openApp('settings'); setCtx(null); }} />
+              <CtxItem icon={LucideIcons.RefreshCw} label="Refresh Desktop" onClick={() => setCtx(null)} />
               <div className="my-1 border-t border-white/8" />
-              <button onClick={() => { openApp('terminal'); setCtx(null); }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 transition">
-                <LucideIcons.TerminalSquare className="h-4 w-4 text-accent-400" />
-                Open Terminal Here
-              </button>
-              <button onClick={() => { openApp('files'); setCtx(null); }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 transition">
-                <LucideIcons.Folder className="h-4 w-4 text-accent-400" />
-                Open Files
-              </button>
+              <CtxItem icon={LucideIcons.TerminalSquare} label="Open Terminal Here" onClick={() => { openApp('terminal'); setCtx(null); }} accent />
+              <CtxItem icon={LucideIcons.Folder} label="Open Files" onClick={() => { openApp('files'); setCtx(null); }} accent />
+              <CtxItem icon={LucideIcons.Activity} label="System Monitor" onClick={() => { openApp('sysmon'); setCtx(null); }} />
             </>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+function CtxItem({
+  icon: Icon, label, onClick, muted, accent,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  muted?: boolean;
+  accent?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-[13px] transition hover:bg-white/8 active:bg-white/12 ${
+        muted ? 'text-white/35' : accent ? 'text-accent-300' : 'text-white/75'
+      }`}
+    >
+      <Icon className={`h-3.5 w-3.5 ${muted ? 'text-white/20' : accent ? 'text-accent-400' : 'text-white/40'}`} />
+      {label}
+    </button>
   );
 }

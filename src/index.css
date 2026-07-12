@@ -159,9 +159,42 @@ body {
 }
 
 .window-shadow {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 .no-drag {
   -webkit-app-region: no-drag;
+}
+
+/* macOS-style overlay scrollbars everywhere */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+
+/* animate-fade-in used in LoginScreen */
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Desktop icon hover lift — used via Tailwind group-hover */
+@keyframes dockBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40%       { transform: translateY(-8px) scale(1.15); }
+  60%       { transform: translateY(-4px) scale(1.1); }
+}
+
+/* Window open entry */
+@keyframes windowOpen {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-window-open {
+  animation: windowOpen 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
