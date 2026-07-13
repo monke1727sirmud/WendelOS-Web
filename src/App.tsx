@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { WindowManagerProvider, useWindowManager } from './context/WindowManagerContext';
+import { QuotaProvider } from './context/QuotaContext';
 import LoginScreen from './components/LoginScreen';
 import LockScreen from './components/LockScreen';
 import Desktop from './components/Desktop';
@@ -116,7 +117,9 @@ export default function App() {
     <AuthProvider>
       <SettingsProvider>
         <WindowManagerProvider>
-          <AppContent />
+          <QuotaProvider>
+            <AppContent />
+          </QuotaProvider>
         </WindowManagerProvider>
       </SettingsProvider>
     </AuthProvider>

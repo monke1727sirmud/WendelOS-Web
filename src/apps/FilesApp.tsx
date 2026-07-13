@@ -3,11 +3,12 @@ import {
   Folder, FileText, FilePlus, FolderPlus, Trash2,
   ChevronLeft, ChevronRight, Home, Search, Loader2, Download,
   FileCode, Grid3X3, List, ChevronRight as Caret, HardDrive,
-  Star, Clock, Tag, MoreHorizontal, Info,
+  Star, Clock, Tag, MoreHorizontal, Info, AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { FileNode } from '../lib/types';
 import { useWindowManager } from '../context/WindowManagerContext';
+import { useQuota, fmtBytes } from '../context/QuotaContext';
 
 function fileIcon(name: string, type: 'file' | 'folder') {
   if (type === 'folder') return Folder;
@@ -16,9 +17,7 @@ function fileIcon(name: string, type: 'file' | 'folder') {
 }
 
 function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return fmtBytes(bytes);
 }
 
 const SIDEBAR_SECTIONS = [
@@ -41,6 +40,7 @@ const SIDEBAR_SECTIONS = [
 
 export default function FilesApp() {
   const { openApp } = useWindowManager();
+  const { limits, usage, refresh: refreshQuota, isOver, fraction } = useQuota();
   const [files, setFiles] = useState<FileNode[]>([]);
   const [currentParent, setCurrentParent] = useState<string | null>(null);
   const [breadcrumb, setBreadcrumb] = useState<{ id: string | null; name: string }[]>([
@@ -54,6 +54,7 @@ export default function FilesApp() {
   const [creating, setCreating] = useState<null | 'file' | 'folder'>(null);
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [quotaError, setQuotaError] = useState<string | null>(null);
 
   const loadFiles = useCallback(async (parentId: string | null) => {
     setLoading(true);
@@ -97,11 +98,26 @@ export default function FilesApp() {
 
   const handleCreate = async () => {
     if (!newName.trim()) { setCreating(null); return; }
+
+    if (isOver('files')) {
+      setQuotaError(`File limit reached (${limits.files_limit} files max).`);
+      setCreating(null); setNewName('');
+      return;
+    }
+    if (isOver('storage')) {
+      setQuotaError(`Storage limit reached (${limits.storage_limit_mb} MB max).`);
+      setCreating(null); setNewName('');
+      return;
+    }
+
     const type = creating === 'folder' ? 'folder' : 'file';
     const { data } = await supabase.from('files')
       .insert({ name: newName.trim(), parent_id: currentParent, type, content: type === 'file' ? '' : null, size_bytes: 0 })
       .select('*').single();
-    if (data) setFiles(prev => [...prev, data as FileNode]);
+    if (data) {
+      setFiles(prev => [...prev, data as FileNode]);
+      void refreshQuota();
+    }
     setNewName(''); setCreating(null);
   };
 
@@ -109,6 +125,7 @@ export default function FilesApp() {
     await supabase.from('files').delete().eq('id', id);
     setFiles(prev => prev.filter(f => f.id !== id));
     setSelected(null);
+    void refreshQuota();
   };
 
   const handleOpen = (file: FileNode) => {
@@ -119,9 +136,14 @@ export default function FilesApp() {
   const filtered = files.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
   const selectedFile = files.find(f => f.id === selected);
 
+  const storageFrac = fraction('storage');
+  const fileFrac = fraction('files');
+  const storageColor = storageFrac > 0.9 ? 'bg-red-500' : storageFrac > 0.7 ? 'bg-amber-500' : 'bg-accent-500/60';
+  const fileColor = fileFrac > 0.9 ? 'bg-red-500' : fileFrac > 0.7 ? 'bg-amber-500' : 'bg-accent-500/60';
+
   return (
     <div className="flex h-full bg-[#1c1c1e] text-slate-200">
-      {/* macOS Finder-style sidebar */}
+      {/* Sidebar */}
       <div className="flex w-44 shrink-0 flex-col border-r border-white/8 bg-[#252528]">
         <div className="flex-1 overflow-y-auto py-3">
           {SIDEBAR_SECTIONS.map(section => (
@@ -151,19 +173,37 @@ export default function FilesApp() {
             </div>
           ))}
         </div>
-        {/* Disk usage bar */}
-        <div className="border-t border-white/8 p-3">
-          <p className="mb-1.5 text-[10px] text-white/30">WendelOS Disk</p>
-          <div className="h-1 rounded-full bg-white/8">
-            <div className="h-full w-2/5 rounded-full bg-accent-500/60" />
+
+        {/* Real-time disk usage */}
+        <div className="border-t border-white/8 p-3 space-y-2.5">
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-[10px] text-white/30">Storage</p>
+              <span className={`text-[9px] tabular-nums ${storageFrac > 0.9 ? 'text-red-400' : 'text-white/20'}`}>
+                {fmtBytes(usage.storage_bytes)} / {limits.storage_limit_mb} MB
+              </span>
+            </div>
+            <div className="h-1 rounded-full bg-white/8">
+              <div className={`h-full rounded-full transition-all ${storageColor}`} style={{ width: `${storageFrac * 100}%` }} />
+            </div>
           </div>
-          <p className="mt-1 text-[9px] text-white/20">23.4 GB of 64 GB</p>
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-[10px] text-white/30">Files</p>
+              <span className={`text-[9px] tabular-nums ${fileFrac > 0.9 ? 'text-red-400' : 'text-white/20'}`}>
+                {usage.files_count} / {limits.files_limit}
+              </span>
+            </div>
+            <div className="h-1 rounded-full bg-white/8">
+              <div className={`h-full rounded-full transition-all ${fileColor}`} style={{ width: `${fileFrac * 100}%` }} />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* macOS Finder-style toolbar */}
+        {/* Toolbar */}
         <div className="flex items-center gap-1.5 border-b border-white/8 bg-[#1c1c1e]/80 px-3 py-2 backdrop-blur-sm">
           <button onClick={goBack} disabled={histIdx <= 0}
             className="flex h-7 w-7 items-center justify-center rounded-md text-white/40 transition hover:bg-white/8 hover:text-white disabled:opacity-20">
@@ -174,7 +214,6 @@ export default function FilesApp() {
             <ChevronRight className="h-4 w-4" />
           </button>
 
-          {/* Breadcrumb — Windows Explorer style */}
           <div className="flex items-center gap-0.5 overflow-hidden rounded-md border border-white/8 bg-white/4 px-2 py-1 text-xs">
             {breadcrumb.map((crumb, i) => (
               <div key={i} className="flex items-center gap-0.5">
@@ -191,13 +230,11 @@ export default function FilesApp() {
           </div>
 
           <div className="ml-auto flex items-center gap-1">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/25" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search"
                 className="w-28 rounded-md border border-white/8 bg-white/4 py-1 pl-6 pr-2 text-xs text-white placeholder-white/20 outline-none focus:border-accent-500/40 focus:w-40 transition-all" />
             </div>
-            {/* View toggle */}
             <div className="flex rounded-md border border-white/8 overflow-hidden">
               <button onClick={() => setViewMode('grid')}
                 className={`flex h-7 w-7 items-center justify-center text-xs transition ${viewMode === 'grid' ? 'bg-white/12 text-white' : 'text-white/30 hover:bg-white/6'}`}>
@@ -208,16 +245,29 @@ export default function FilesApp() {
                 <List className="h-3.5 w-3.5" />
               </button>
             </div>
-            <button onClick={() => setCreating('folder')} title="New folder"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-white/40 transition hover:bg-white/8 hover:text-white">
+            <button
+              onClick={() => { if (isOver('files') || isOver('storage')) { setQuotaError('Storage or file limit reached.'); } else setCreating('folder'); }}
+              title="New folder"
+              className={`flex h-7 w-7 items-center justify-center rounded-md transition ${isOver('files') || isOver('storage') ? 'text-white/15 cursor-not-allowed' : 'text-white/40 hover:bg-white/8 hover:text-white'}`}>
               <FolderPlus className="h-4 w-4" />
             </button>
-            <button onClick={() => setCreating('file')} title="New file"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-white/40 transition hover:bg-white/8 hover:text-white">
+            <button
+              onClick={() => { if (isOver('files') || isOver('storage')) { setQuotaError('Storage or file limit reached.'); } else setCreating('file'); }}
+              title="New file"
+              className={`flex h-7 w-7 items-center justify-center rounded-md transition ${isOver('files') || isOver('storage') ? 'text-white/15 cursor-not-allowed' : 'text-white/40 hover:bg-white/8 hover:text-white'}`}>
               <FilePlus className="h-4 w-4" />
             </button>
           </div>
         </div>
+
+        {/* Quota error banner */}
+        {quotaError && (
+          <div className="flex items-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-300">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span className="flex-1">{quotaError}</span>
+            <button onClick={() => setQuotaError(null)} className="text-amber-400/50 hover:text-amber-300 transition">✕</button>
+          </div>
+        )}
 
         {/* File area */}
         <div className="flex flex-1 overflow-hidden">
@@ -245,7 +295,7 @@ export default function FilesApp() {
                   <div className="flex flex-col items-center gap-1.5 rounded-lg p-2.5">
                     {creating === 'folder' ? <Folder className="h-11 w-11 text-accent-400" /> : <FileText className="h-11 w-11 text-slate-400" />}
                     <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
-                      onBlur={handleCreate} onKeyDown={e => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') { setCreating(null); setNewName(''); } }}
+                      onBlur={handleCreate} onKeyDown={e => { if (e.key === 'Enter') void handleCreate(); if (e.key === 'Escape') { setCreating(null); setNewName(''); } }}
                       className="w-full rounded border border-accent-500/50 bg-black/40 px-1 py-0.5 text-center text-[11px] text-white outline-none" />
                   </div>
                 )}
@@ -257,7 +307,6 @@ export default function FilesApp() {
                 )}
               </div>
             ) : (
-              /* List view — Windows Explorer style */
               <div className="rounded-lg overflow-hidden border border-white/8">
                 <div className="grid grid-cols-[1fr_80px_100px] border-b border-white/8 bg-white/4 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-white/30">
                   <span>Name</span><span className="text-right">Size</span><span className="text-right">Modified</span>
@@ -287,7 +336,6 @@ export default function FilesApp() {
             )}
           </div>
 
-          {/* Inspector panel — macOS style */}
           {selectedFile && (
             <div className="w-48 shrink-0 border-l border-white/8 bg-[#252528] p-4 text-xs">
               <div className="mb-3 flex flex-col items-center gap-2 border-b border-white/8 pb-4">
@@ -320,11 +368,10 @@ export default function FilesApp() {
           )}
         </div>
 
-        {/* Windows-style status bar */}
         <div className="flex items-center justify-between border-t border-white/8 bg-[#252528] px-4 py-1.5 text-[10px] text-white/25">
           <span>{filtered.length} item{filtered.length !== 1 ? 's' : ''}</span>
           {selectedFile && <span className="flex items-center gap-1"><Info className="h-3 w-3" /> {selectedFile.name} {selectedFile.type === 'file' ? `— ${formatSize(selectedFile.size_bytes)}` : '(folder)'}</span>}
-          <span className="flex items-center gap-1"><MoreHorizontal className="h-3 w-3" /> WendelFS</span>
+          <span className="flex items-center gap-1"><MoreHorizontal className="h-3 w-3" /> WendelFS · {fmtBytes(usage.storage_bytes)} used</span>
         </div>
       </div>
     </div>

@@ -2,25 +2,28 @@ import { useState } from 'react';
 import {
   Palette, Shield, User, Monitor, LogOut, Check, Loader2,
   Moon, Sun, Clock, Lock, Database, Zap, ChevronRight,
-  Bell, Wifi,
+  Bell, Wifi, HardDrive, AlertTriangle,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { useQuota, fmtBytes } from '../context/QuotaContext';
 import { WALLPAPERS, ACCENT_COLORS, wallpaperCss } from '../lib/types';
 
-type Tab = 'appearance' | 'security' | 'account' | 'notifications' | 'network';
+type Tab = 'appearance' | 'security' | 'account' | 'notifications' | 'network' | 'storage';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{className?:string}>; desc: string }[] = [
-  { id: 'appearance', label: 'Appearance',    icon: Palette,  desc: 'Wallpaper, colors, theme' },
+  { id: 'appearance', label: 'Appearance',    icon: Palette,    desc: 'Wallpaper, colors, theme' },
   { id: 'security',   label: 'Privacy & Security', icon: Shield, desc: 'Lock, auth, RLS' },
-  { id: 'account',    label: 'Account',       icon: User,     desc: 'Profile, session' },
-  { id: 'notifications', label: 'Notifications', icon: Bell,  desc: 'Alerts, badges' },
-  { id: 'network',    label: 'Network',       icon: Wifi,     desc: 'Connections, DNS' },
+  { id: 'account',    label: 'Account',       icon: User,       desc: 'Profile, session' },
+  { id: 'storage',    label: 'Storage & Quotas', icon: HardDrive, desc: 'Disk, limits, usage' },
+  { id: 'notifications', label: 'Notifications', icon: Bell,   desc: 'Alerts, badges' },
+  { id: 'network',    label: 'Network',       icon: Wifi,       desc: 'Connections, DNS' },
 ];
 
 export default function SettingsApp() {
   const { settings, update } = useSettings();
   const { user, username, signOut, autoLockMinutes, setAutoLockMinutes } = useAuth();
+  const { limits, usage, loading: quotaLoading, fraction, isOver } = useQuota();
   const [tab, setTab] = useState<Tab>('appearance');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -247,6 +250,95 @@ export default function SettingsApp() {
                 ))}
               </div>
             </section>
+          )}
+
+          {tab === 'storage' && (
+            <div className="space-y-4">
+              {quotaLoading ? (
+                <div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-white/30" /></div>
+              ) : (
+                <>
+                  {/* Overview cards */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: 'Storage Used', value: fmtBytes(usage.storage_bytes), max: `${limits.storage_limit_mb} MB`, frac: fraction('storage'), over: isOver('storage') },
+                      { label: 'Files & Folders', value: String(usage.files_count), max: String(limits.files_limit), frac: fraction('files'), over: isOver('files') },
+                      { label: 'Notes', value: String(usage.notes_count), max: String(limits.notes_limit), frac: fraction('notes'), over: isOver('notes') },
+                    ].map(card => (
+                      <div key={card.label} className={`rounded-2xl border p-4 ${card.over ? 'border-red-500/30 bg-red-500/8' : 'border-white/8 bg-white/3'}`}>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-white/30 mb-2">{card.label}</p>
+                        <div className="flex items-end gap-1 mb-2">
+                          <span className={`text-xl font-bold ${card.over ? 'text-red-400' : 'text-white'}`}>{card.value}</span>
+                          <span className="text-xs text-white/25 mb-0.5">/ {card.max}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${card.over ? 'bg-red-500' : card.frac > 0.7 ? 'bg-amber-500' : 'bg-accent-500/60'}`}
+                            style={{ width: `${card.frac * 100}%` }} />
+                        </div>
+                        {card.over && <p className="mt-1.5 text-[9px] text-red-400 flex items-center gap-0.5"><AlertTriangle className="h-2.5 w-2.5" /> Limit reached</p>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Detailed quota table */}
+                  <section className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
+                    <div className="border-b border-white/8 px-5 py-3.5">
+                      <p className="text-sm font-semibold text-white">All Quotas</p>
+                      <p className="text-xs text-white/30 mt-0.5">Your current usage across all WendelOS resources</p>
+                    </div>
+                    <div className="divide-y divide-white/5">
+                      {[
+                        { resource: 'Files', icon: HardDrive, used: usage.files_count, limit: limits.files_limit, unit: 'files', frac: fraction('files'), over: isOver('files') },
+                        { resource: 'Storage', icon: Database, used: `${fmtBytes(usage.storage_bytes)}`, limit: `${limits.storage_limit_mb} MB`, unit: '', frac: fraction('storage'), over: isOver('storage') },
+                        { resource: 'Notes', icon: Zap, used: usage.notes_count, limit: limits.notes_limit, unit: 'notes', frac: fraction('notes'), over: isOver('notes') },
+                        { resource: 'Calendar Events', icon: Clock, used: usage.events_count, limit: limits.events_limit, unit: 'events', frac: fraction('events'), over: isOver('events') },
+                        { resource: 'Installed Apps', icon: Monitor, used: usage.installed_apps_count, limit: limits.installed_apps_limit, unit: 'apps', frac: fraction('installed_apps'), over: isOver('installed_apps') },
+                      ].map(row => (
+                        <div key={row.resource} className="flex items-center gap-4 px-5 py-3.5">
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${row.over ? 'bg-red-500/15' : 'bg-white/6'}`}>
+                            <row.icon className={`h-4 w-4 ${row.over ? 'text-red-400' : 'text-white/40'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs font-medium text-white/70">{row.resource}</span>
+                              <span className={`text-[10px] tabular-nums ${row.over ? 'text-red-400' : 'text-white/30'}`}>
+                                {row.used}{row.unit ? ` ${row.unit}` : ''} / {row.limit}{row.unit ? ` ${row.unit}` : ''}
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-white/8 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  row.over ? 'bg-red-500' : (row.frac as number) > 0.7 ? 'bg-amber-500' : 'bg-accent-500/70'
+                                }`}
+                                style={{ width: `${Math.min(100, (row.frac as number) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                          {row.over && (
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
+                          )}
+                          {!row.over && (row.frac as number) > 0.7 && (
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="rounded-2xl border border-white/8 bg-white/3 p-5">
+                    <p className="text-xs font-semibold text-white/60 mb-2">About Quota Limits</p>
+                    <p className="text-[11px] text-white/30 leading-relaxed">
+                      Quotas are enforced per-user and reset only when resources are deleted.
+                      Limits apply across all sessions. Contact your admin to request a quota increase.
+                    </p>
+                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-accent-500/20 bg-accent-500/8 px-3 py-2 text-[11px] text-accent-300">
+                      <Zap className="h-3.5 w-3.5 shrink-0" />
+                      Free tier: 500 files · 100 MB · 100 notes · 500 events · 20 apps
+                    </div>
+                  </section>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>

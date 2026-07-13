@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Loader2, StickyNote, Search, Pin, MoreHorizontal } from 'lucide-react';
+import { Plus, Trash2, Loader2, StickyNote, Search, Pin, MoreHorizontal, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Note } from '../lib/types';
+import { useQuota } from '../context/QuotaContext';
 
 const COLOR_MAP: Record<string, { bg: string; border: string; dot: string; header: string }> = {
   amber:   { bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   dot: 'bg-amber-400',   header: 'bg-amber-500/15' },
@@ -17,6 +18,8 @@ export default function NotesApp() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [quotaError, setQuotaError] = useState<string | null>(null);
+  const { limits, usage, refresh: refreshQuota, isOver } = useQuota();
 
   const loadNotes = useCallback(async () => {
     setLoading(true);
@@ -28,10 +31,14 @@ export default function NotesApp() {
   useEffect(() => { void loadNotes(); }, [loadNotes]);
 
   const handleCreate = async () => {
+    if (isOver('notes')) {
+      setQuotaError(`Note limit reached (${limits.notes_limit} notes max). Delete some notes to create more.`);
+      return;
+    }
     const colors = ['amber', 'rose', 'emerald', 'sky', 'violet'];
     const color = colors[Math.floor(Math.random() * colors.length)];
     const { data } = await supabase.from('notes').insert({ title: 'New Note', content: '', color }).select('*').single();
-    if (data) { setNotes(prev => [data as Note, ...prev]); setSelected(data.id); }
+    if (data) { setNotes(prev => [data as Note, ...prev]); setSelected(data.id); void refreshQuota(); }
   };
 
   const handleUpdate = async (id: string, patch: Partial<Note>) => {
@@ -43,6 +50,7 @@ export default function NotesApp() {
     await supabase.from('notes').delete().eq('id', id);
     setNotes(prev => prev.filter(n => n.id !== id));
     setSelected(null);
+    void refreshQuota();
   };
 
   const filtered = notes.filter(n =>
@@ -59,12 +67,19 @@ export default function NotesApp() {
       <div className="flex w-52 shrink-0 flex-col border-r border-white/8 bg-[#252528]">
         {/* Toolbar */}
         <div className="flex items-center gap-2 border-b border-white/8 px-3 py-2.5">
-          <button onClick={handleCreate}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-500/20 text-accent-400 transition hover:bg-accent-500/30">
+          {quotaError && (
+            <div className="absolute left-0 right-0 top-[36px] z-10 flex items-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-[10px] text-amber-300">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              <span className="flex-1 leading-tight">{quotaError}</span>
+              <button onClick={() => setQuotaError(null)} className="text-amber-400/50 hover:text-amber-300">✕</button>
+            </div>
+          )}
+          <button onClick={() => void handleCreate()}
+            className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${isOver('notes') ? 'bg-white/5 text-white/20 cursor-not-allowed' : 'bg-accent-500/20 text-accent-400 hover:bg-accent-500/30'}`}>
             <Plus className="h-4 w-4" />
           </button>
           <span className="flex-1 text-xs font-semibold text-white/60">Notes</span>
-          <span className="text-[10px] text-white/20">{notes.length}</span>
+          <span className={`text-[10px] tabular-nums ${isOver('notes') ? 'text-red-400' : 'text-white/20'}`}>{usage.notes_count}/{limits.notes_limit}</span>
         </div>
 
         {/* Search */}

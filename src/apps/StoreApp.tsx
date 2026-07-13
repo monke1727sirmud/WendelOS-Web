@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Store, Download, Trash2, ExternalLink, Search,
-  Star, Loader2, Check, Package, X, Globe,
+  Star, Loader2, Check, Package, X, Globe, AlertTriangle,
 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { APP_CATALOG, type CatalogApp, type InstalledApp } from '../lib/types';
+import { useQuota } from '../context/QuotaContext';
 import { useWindowManager } from '../context/WindowManagerContext';
 
 type IconName = keyof typeof LucideIcons;
@@ -36,6 +37,7 @@ function AppIcon({ icon, color, size = 'md' }: { icon: string; color: string; si
 
 export default function StoreApp() {
   const { openApp } = useWindowManager();
+  const { limits, usage, refresh: refreshQuota, isOver } = useQuota();
   const [installed, setInstalled] = useState<InstalledApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState<Set<string>>(new Set());
@@ -55,22 +57,23 @@ export default function StoreApp() {
 
   const install = async (app: CatalogApp) => {
     if (isInstalled(app.id)) return;
+    if (isOver('installed_apps')) {
+      setDetail(app);
+      return;
+    }
     setInstalling(prev => new Set(prev).add(app.id));
     await supabase.from('installed_apps').insert({
-      app_id: app.id,
-      name: app.name,
-      icon: app.icon,
-      url: app.url,
-      color: app.color,
-      category: app.category,
+      app_id: app.id, name: app.name, icon: app.icon, url: app.url, color: app.color, category: app.category,
     });
     await loadInstalled();
+    void refreshQuota();
     setInstalling(prev => { const n = new Set(prev); n.delete(app.id); return n; });
   };
 
   const uninstall = async (app: CatalogApp) => {
     await supabase.from('installed_apps').delete().eq('app_id', app.id);
     await loadInstalled();
+    void refreshQuota();
     setDetail(null);
   };
 
@@ -137,6 +140,20 @@ export default function StoreApp() {
           <div>
             <h1 className="text-sm font-semibold text-white">App Store</h1>
             <p className="text-[11px] text-white/30">{filtered.length} apps · {installed.length} installed</p>
+          </div>
+          {/* Installed app quota bar */}
+          <div className="ml-auto flex flex-col items-end gap-1 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] tabular-nums ${isOver('installed_apps') ? 'text-red-400' : 'text-white/25'}`}>
+                {usage.installed_apps_count} / {limits.installed_apps_limit} installed
+              </span>
+            </div>
+            <div className="h-1 w-32 rounded-full bg-white/8 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${isOver('installed_apps') ? 'bg-red-500' : 'bg-accent-500/60'}`}
+                style={{ width: `${Math.min(100, (usage.installed_apps_count / Math.max(1, limits.installed_apps_limit)) * 100)}%` }}
+              />
+            </div>
           </div>
         </div>
 
@@ -254,17 +271,25 @@ export default function StoreApp() {
                     <ExternalLink className="h-4 w-4" /> Open
                   </button>
                 )}
-                <button onClick={() => isInstalled(detail.id) ? void uninstall(detail) : void install(detail)}
-                  disabled={installing.has(detail.id)}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
-                    isInstalled(detail.id)
-                      ? 'border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                      : 'bg-accent-500 text-white hover:bg-accent-600'
-                  }`}>
-                  {installing.has(detail.id) ? <Loader2 className="h-4 w-4 animate-spin" /> :
-                    isInstalled(detail.id) ? <><Trash2 className="h-4 w-4" /> Uninstall</> :
-                    <><Download className="h-4 w-4" /> Install</>}
-                </button>
+                {!isInstalled(detail.id) && isOver('installed_apps') && (
+                  <div className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 py-2.5 text-xs text-amber-300">
+                    <AlertTriangle className="h-4 w-4" />
+                    App limit reached ({limits.installed_apps_limit} max) — uninstall an app first
+                  </div>
+                )}
+                {!(isOver('installed_apps') && !isInstalled(detail.id)) && (
+                  <button onClick={() => isInstalled(detail.id) ? void uninstall(detail) : void install(detail)}
+                    disabled={installing.has(detail.id)}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
+                      isInstalled(detail.id)
+                        ? 'border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                        : 'bg-accent-500 text-white hover:bg-accent-600'
+                    }`}>
+                    {installing.has(detail.id) ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                      isInstalled(detail.id) ? <><Trash2 className="h-4 w-4" /> Uninstall</> :
+                      <><Download className="h-4 w-4" /> Install</>}
+                  </button>
+                )}
               </div>
             </div>
           </div>

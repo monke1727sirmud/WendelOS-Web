@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  ChevronLeft, ChevronRight, Plus, Trash2, MapPin, X, Loader2, Clock, Calendar,
+  ChevronLeft, ChevronRight, Plus, Trash2, MapPin, X, Loader2, Clock, Calendar, AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { CalendarEvent } from '../lib/types';
+import { useQuota } from '../context/QuotaContext';
 
 const EVENT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   sky:     { bg: 'bg-sky-500',     text: 'text-sky-400',     dot: 'bg-sky-500' },
@@ -29,6 +30,8 @@ export default function CalendarApp() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [showModal, setShowModal] = useState(false);
   const [editEvent, setEditEvent] = useState<Partial<CalendarEvent> | null>(null);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
+  const { limits, usage, refresh: refreshQuota, isOver } = useQuota();
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
@@ -53,14 +56,22 @@ export default function CalendarApp() {
 
   const handleSave = async () => {
     if (!editEvent?.title || !editEvent.start_at || !editEvent.end_at) return;
+    const isNew = !editEvent.id;
+    if (isNew && isOver('events')) {
+      setQuotaError(`Event limit reached (${limits.events_limit} events max). Delete some events to create more.`);
+      setShowModal(false); setEditEvent(null);
+      return;
+    }
     const payload = { title: editEvent.title, description: editEvent.description ?? null, location: editEvent.location ?? null, start_at: editEvent.start_at, end_at: editEvent.end_at, color: editEvent.color ?? 'sky' };
     if (editEvent.id) await supabase.from('events').update(payload).eq('id', editEvent.id);
     else await supabase.from('events').insert(payload);
+    if (isNew) void refreshQuota();
     setShowModal(false); setEditEvent(null); void loadEvents();
   };
 
   const handleDelete = async (id: string) => {
     await supabase.from('events').delete().eq('id', id);
+    void refreshQuota();
     setShowModal(false); setEditEvent(null); void loadEvents();
   };
 
@@ -153,12 +164,22 @@ export default function CalendarApp() {
             className="rounded-lg border border-white/10 px-3 py-1 text-xs text-white/40 transition hover:bg-white/8 hover:text-white">
             Today
           </button>
+          {quotaError && (
+            <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] text-amber-300">
+              <AlertTriangle className="h-3 w-3 shrink-0" />{quotaError}
+              <button onClick={() => setQuotaError(null)} className="ml-1 text-amber-400/50 hover:text-amber-300">✕</button>
+            </div>
+          )}
+          <span className={`ml-auto text-[10px] tabular-nums ${isOver('events') ? 'text-red-400' : 'text-white/25'}`}>
+            {usage.events_count}/{limits.events_limit} events
+          </span>
           <button onClick={() => {
+            if (isOver('events')) { setQuotaError(`Event limit reached (${limits.events_limit} max).`); return; }
             const start = selectedDate ?? new Date(); start.setHours(10,0,0,0);
             const end = new Date(start); end.setHours(11,0,0,0);
             setEditEvent({ start_at: start.toISOString(), end_at: end.toISOString(), color: 'sky' });
             setShowModal(true);
-          }} className="ml-auto flex items-center gap-1.5 rounded-xl bg-accent-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-accent-600">
+          }} className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-white transition ${isOver('events') ? 'bg-white/8 text-white/25 cursor-not-allowed' : 'bg-accent-500 hover:bg-accent-600'}`}>
             <Plus className="h-3.5 w-3.5" /> New Event
           </button>
         </div>
