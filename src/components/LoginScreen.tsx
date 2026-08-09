@@ -69,7 +69,7 @@ function StatusBar({ centerLabel }: { centerLabel?: string }) {
 }
 
 export default function LoginScreen() {
-  const { signIn, signUp, isUsernameTaken } = useAuth();
+  const { signIn, signUp, isUsernameTaken, enterDevPreview } = useAuth();
 
   const [view, setView] = useState<'lock' | 'signin' | 'signup'>('lock');
   const [username, setUsername] = useState('');
@@ -348,15 +348,22 @@ export default function LoginScreen() {
               Back to lock screen
             </button>
 
-            {/* Test badge — Windows notification card style */}
-            <div className="mt-4 flex justify-center">
+            {/* Developer preview — local-only, no database records */}
+            <div className="mt-4 flex flex-col items-center gap-2">
               <button
-                onClick={fillTestAccount}
+                onClick={enterDevPreview}
                 className="flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/6 px-3 py-2 text-[11px] text-amber-300/55 backdrop-blur-sm transition hover:bg-amber-400/12 hover:text-amber-300/80 hover:border-amber-400/35"
               >
-                <span className="font-mono font-bold tracking-wider text-amber-400/65">TEST</span>
+                <span className="font-mono font-bold tracking-wider text-amber-400/65">DEV</span>
                 <span className="text-amber-400/25">—</span>
-                <span>Fill test account credentials</span>
+                <span>Developer Preview (no login)</span>
+                <ChevronRight className="h-3 w-3" />
+              </button>
+              <button
+                onClick={fillTestAccount}
+                className="text-[10px] text-white/20 transition hover:text-white/40"
+              >
+                or fill test credentials
               </button>
             </div>
           </div>

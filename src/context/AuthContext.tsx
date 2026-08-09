@@ -12,12 +12,26 @@ import { supabase } from '../lib/supabase';
 
 type AuthState = 'loading' | 'authenticated' | 'unauthenticated';
 
+const PREVIEW_FLAG = 'wendelos_dev_preview';
+
+const PREVIEW_USER: User = {
+  id: 'dev-preview-00000000',
+  aud: 'authenticated',
+  role: 'authenticated',
+  email: 'developer@preview.local',
+  app_metadata: { provider: 'preview' },
+  user_metadata: {},
+  identities: [],
+  created_at: new Date(0).toISOString(),
+} as unknown as User;
+
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
   authState: AuthState;
   username: string;
   isLocked: boolean;
+  isDevPreview: boolean;
   lock: () => void;
   unlock: (password: string) => Promise<{ error: string | null }>;
   signIn: (
@@ -28,6 +42,7 @@ interface AuthContextValue {
     username: string,
     password: string
   ) => Promise<{ error: string | null }>;
+  enterDevPreview: () => void;
   isUsernameTaken: (username: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   autoLockMinutes: number;
@@ -54,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>('loading');
   const [isLocked, setIsLocked] = useState(false);
   const [username, setUsername] = useState('');
+  const [isDevPreview, setIsDevPreview] = useState(false);
   const [autoLockMinutes, setAutoLockMinutesState] = useState(5);
   const lockTimerRef = useRef<number | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
@@ -101,6 +117,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   useEffect(() => {
+    if (sessionStorage.getItem(PREVIEW_FLAG) === '1') {
+      setIsDevPreview(true);
+      setUsername('developer');
+      setAuthState('authenticated');
+      if (sessionStorage.getItem(LOCK_KEY) === '1') setIsLocked(true);
+      return;
+    }
+
     const init = (async () => {
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
@@ -114,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
+      if (sessionStorage.getItem(PREVIEW_FLAG) === '1') return;
       (async () => {
         setSession(sess);
         setAuthState(sess ? 'authenticated' : 'unauthenticated');
@@ -198,6 +223,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem(LOCK_KEY);
     setIsLocked(false);
     setUsername('');
+    if (sessionStorage.getItem(PREVIEW_FLAG) === '1') {
+      sessionStorage.removeItem(PREVIEW_FLAG);
+      setIsDevPreview(false);
+      setAuthState('unauthenticated');
+      return;
+    }
     await supabase.auth.signOut();
   }, [clearLockTimer]);
 
@@ -207,6 +238,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unlock = useCallback(async (password: string) => {
+    if (isDevPreview) {
+      setIsLocked(false);
+      sessionStorage.removeItem(LOCK_KEY);
+      armLockTimer(autoLockMinutes);
+      return { error: null };
+    }
     if (!session?.user?.email) return { error: 'No active session' };
     const { error } = await supabase.auth.signInWithPassword({
       email: session.user.email,
@@ -217,7 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem(LOCK_KEY);
     armLockTimer(autoLockMinutes);
     return { error: null };
-  }, [session, autoLockMinutes, armLockTimer]);
+  }, [session, autoLockMinutes, armLockTimer, isDevPreview]);
 
   const setAutoLockMinutes = useCallback(
     (m: number) => {
@@ -227,18 +264,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [authState, isLocked, armLockTimer]
   );
 
+  const enterDevPreview = useCallback(() => {
+    sessionStorage.setItem(PREVIEW_FLAG, '1');
+    setIsDevPreview(true);
+    setUsername('developer');
+    setSession(null);
+    setAuthState('authenticated');
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
-        user: session?.user ?? null,
+        user: isDevPreview ? PREVIEW_USER : session?.user ?? null,
         session,
         authState,
         username,
         isLocked,
+        isDevPreview,
         lock,
         unlock,
         signIn,
         signUp,
+        enterDevPreview,
         isUsernameTaken,
         signOut,
         autoLockMinutes,

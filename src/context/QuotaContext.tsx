@@ -67,13 +67,19 @@ const QuotaContext = createContext<QuotaState>({
 });
 
 export function QuotaProvider({ children }: { children: ReactNode }) {
-  const { authState } = useAuth();
+  const { authState, isDevPreview } = useAuth();
   const [limits, setLimits] = useState<QuotaLimits>(DEFAULT_LIMITS);
   const [usage, setUsage] = useState<QuotaUsage>(DEFAULT_USAGE);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     if (authState !== 'authenticated') return;
+    if (isDevPreview) {
+      setLimits(DEFAULT_LIMITS);
+      setUsage(DEFAULT_USAGE);
+      setLoading(false);
+      return;
+    }
     const [limitsRes, usageRes] = await Promise.all([
       supabase.from('user_quotas').select('*').maybeSingle(),
       supabase.rpc('get_user_usage', { uid: (await supabase.auth.getUser()).data.user?.id ?? '' }),
@@ -81,7 +87,7 @@ export function QuotaProvider({ children }: { children: ReactNode }) {
     if (limitsRes.data) setLimits(limitsRes.data as QuotaLimits);
     if (usageRes.data) setUsage(usageRes.data as QuotaUsage);
     setLoading(false);
-  }, [authState]);
+  }, [authState, isDevPreview]);
 
   useEffect(() => {
     if (authState === 'authenticated') void refresh();

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { useWindowManager } from '../context/WindowManagerContext';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { AppId, InstalledApp } from '../lib/types';
 
@@ -34,15 +35,17 @@ interface ContextMenu { x: number; y: number; iconId: string | null; }
 
 export default function Desktop() {
   const { openApp } = useWindowManager();
+  const { isDevPreview } = useAuth();
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [ctx, setCtx] = useState<ContextMenu | null>(null);
   const ctxRef = useRef<HTMLDivElement>(null);
 
   const loadInstalled = useCallback(async () => {
+    if (isDevPreview) { setInstalledApps([]); return; }
     const { data } = await supabase.from('installed_apps').select('*').order('installed_at');
     if (data) setInstalledApps(data as InstalledApp[]);
-  }, []);
+  }, [isDevPreview]);
 
   useEffect(() => { void loadInstalled(); }, [loadInstalled]);
 

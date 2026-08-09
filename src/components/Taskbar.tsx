@@ -51,7 +51,7 @@ function BatteryIcon({ level }: { level: number }) {
 
 export default function Taskbar() {
   const { windows, activeId, openApp, toggleFromTaskbar } = useWindowManager();
-  const { username, lock, signOut } = useAuth();
+  const { username, lock, signOut, isDevPreview } = useAuth();
   const { settings, update: updateSettings } = useSettings();
   const [startOpen, setStartOpen] = useState(false);
   const [trayOpen, setTrayOpen] = useState(false);
@@ -67,6 +67,7 @@ export default function Taskbar() {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (isDevPreview) { setInstalledApps([]); return; }
     const loadInstalled = async () => {
       const { data } = await supabase.from('installed_apps').select('*').order('installed_at');
       if (data) setInstalledApps(data as InstalledApp[]);
@@ -74,7 +75,7 @@ export default function Taskbar() {
     void loadInstalled();
     window.addEventListener('focus', loadInstalled);
     return () => window.removeEventListener('focus', loadInstalled);
-  }, []);
+  }, [isDevPreview]);
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -106,6 +107,9 @@ export default function Taskbar() {
         <div className="flex items-center gap-1.5">
           <TerminalSquare className="h-3 w-3 text-white/50" />
           <span className="font-mono text-[10px] font-semibold tracking-widest text-white/40 uppercase">WendelOS</span>
+          {isDevPreview && (
+            <span className="ml-1.5 rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-px font-mono text-[8px] font-bold tracking-wider text-amber-300/70">DEV PREVIEW</span>
+          )}
         </div>
         <div className="absolute left-1/2 -translate-x-1/2 text-[11px] font-medium text-white/45 truncate max-w-xs">
           {activeId ? (windows.find(w => w.id === activeId)?.title ?? '') : ''}
