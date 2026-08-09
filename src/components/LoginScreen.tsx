@@ -170,24 +170,12 @@ export default function LoginScreen() {
             </div>
           </button>
 
-          {/* Bottom dock-style row — Windows power + test badge */}
-          <div className="absolute bottom-6 left-0 right-0 flex items-center justify-between px-6">
-            {/* Linux power hint */}
+          {/* Bottom dock-style row — power hint */}
+          <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center px-6">
             <div className="flex items-center gap-1.5 text-[10px] font-mono text-white/20 uppercase tracking-widest">
               <Power className="h-3 w-3" />
               <span>WendelOS 1.0</span>
             </div>
-
-            {/* Test account — amber badge */}
-            <button
-              onClick={fillTestAccount}
-              className="flex items-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/8 px-3 py-1.5 text-[11px] text-amber-300/60 backdrop-blur-sm transition hover:bg-amber-400/18 hover:text-amber-300 hover:border-amber-400/40"
-            >
-              <span className="font-mono font-bold tracking-wider text-amber-400/70">TEST</span>
-              <span className="text-amber-400/30">—</span>
-              <span>Sign in with test account</span>
-              <ChevronRight className="h-3 w-3" />
-            </button>
           </div>
         </div>
       )}
