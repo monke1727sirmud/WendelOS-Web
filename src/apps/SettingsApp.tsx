@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Palette, Shield, User, Monitor, LogOut, Check, Loader2,
   Moon, Sun, Clock, Lock, Database, Zap, ChevronRight,
-  Bell, Wifi, HardDrive, AlertTriangle,
+  Bell, Wifi, HardDrive, AlertTriangle, Volume2, VolumeX,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -134,6 +134,40 @@ export default function SettingsApp() {
                       {t === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />} {t}
                     </button>
                   ))}
+                </div>
+              </section>
+
+              {/* Sound */}
+              <section className="rounded-2xl border border-white/8 bg-white/3 p-5">
+                <div className="mb-4 flex items-center gap-2">
+                  {settings.sound_enabled ? <Volume2 className="h-4 w-4 text-accent-400" /> : <VolumeX className="h-4 w-4 text-white/40" />}
+                  <h3 className="text-sm font-semibold text-white">Sound Effects</h3>
+                </div>
+                <div className="space-y-4">
+                  <button
+                    onClick={() => void handleUpdate({ sound_enabled: !settings.sound_enabled })}
+                    className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 transition ${
+                      settings.sound_enabled
+                        ? 'border-accent-500/30 bg-accent-500/10'
+                        : 'border-white/8 bg-white/3 hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="text-sm text-white/70">{settings.sound_enabled ? 'Sound enabled' : 'Sound muted'}</span>
+                    <span className={`relative h-6 w-11 rounded-full transition ${settings.sound_enabled ? 'bg-accent-500' : 'bg-white/10'}`}>
+                      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${settings.sound_enabled ? 'left-[22px]' : 'left-0.5'}`} />
+                    </span>
+                  </button>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="text-xs text-white/40">Volume</span>
+                      <span className="text-xs font-mono text-white/60">{settings.sfx_volume}%</span>
+                    </div>
+                    <input
+                      type="range" min={0} max={100} value={settings.sfx_volume}
+                      onChange={e => void handleUpdate({ sfx_volume: Number(e.target.value) })}
+                      className="w-full accent-[var(--accent-500)]"
+                    />
+                  </div>
                 </div>
               </section>
             </>

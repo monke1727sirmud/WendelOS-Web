@@ -33,6 +33,8 @@ export interface UserSettings {
   theme: 'dark' | 'light';
   accent_color: string;
   auto_lock_minutes: number;
+  sound_enabled: boolean;
+  sfx_volume: number;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -40,6 +42,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   theme: 'dark',
   accent_color: 'sky',
   auto_lock_minutes: 5,
+  sound_enabled: true,
+  sfx_volume: 50,
 };
 
 export interface FileNode {

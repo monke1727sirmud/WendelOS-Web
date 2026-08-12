@@ -3,6 +3,7 @@ import { Minus, Maximize2, X, Minimize2 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import type { WindowInstance } from '../lib/types';
 import { useWindowManager } from '../context/WindowManagerContext';
+import { playSfx } from '../lib/sfx';
 
 type IconName = keyof typeof LucideIcons;
 
@@ -125,21 +126,21 @@ export default function Window({ win, children }: { win: WindowInstance; childre
           onMouseLeave={() => setHoverControls(false)}
         >
           <button
-            onClick={() => closeWindow(win.id)}
+            onClick={() => { playSfx('close'); closeWindow(win.id); }}
             title="Close"
             className="relative flex h-3 w-3 items-center justify-center rounded-full bg-[#ff5f57] ring-1 ring-black/25 transition hover:brightness-90 active:brightness-75"
           >
             {hoverControls && <X className="absolute h-2 w-2 text-[#820005]" strokeWidth={2.5} />}
           </button>
           <button
-            onClick={() => minimizeWindow(win.id)}
+            onClick={() => { playSfx('pop'); minimizeWindow(win.id); }}
             title="Minimize"
             className="relative flex h-3 w-3 items-center justify-center rounded-full bg-[#febc2e] ring-1 ring-black/25 transition hover:brightness-90 active:brightness-75"
           >
             {hoverControls && <Minus className="absolute h-2 w-2 text-[#7d4e00]" strokeWidth={2.5} />}
           </button>
           <button
-            onClick={() => toggleMaximize(win.id)}
+            onClick={() => { playSfx('toggle'); toggleMaximize(win.id); }}
             title={win.is_maximized ? 'Restore' : 'Maximize'}
             className="relative flex h-3 w-3 items-center justify-center rounded-full bg-[#28c840] ring-1 ring-black/25 transition hover:brightness-90 active:brightness-75"
           >

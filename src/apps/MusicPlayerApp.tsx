@@ -3,6 +3,7 @@ import {
   Play, Pause, SkipForward, SkipBack, Shuffle, Repeat,
   Volume2, VolumeX, ListMusic, Heart,
 } from 'lucide-react';
+import { SynthPlayer } from '../lib/synthAudio';
 
 interface Track { id: number; title: string; artist: string; album: string; duration: number; cover: string; }
 
@@ -27,7 +28,16 @@ export default function MusicPlayerApp() {
   const [liked, setLiked] = useState<Set<number>>(new Set());
   const [muted, setMuted] = useState(false);
   const intervalRef = useRef<number | null>(null);
+  const synthRef = useRef<SynthPlayer | null>(null);
   const track = TRACKS[trackIdx];
+
+  useEffect(() => {
+    synthRef.current = new SynthPlayer();
+    return () => { synthRef.current?.dispose(); synthRef.current = null; };
+  }, []);
+
+  useEffect(() => { synthRef.current?.setVolume(volume / 100); }, [volume]);
+  useEffect(() => { synthRef.current?.setMuted(muted); }, [muted]);
 
   const next = useCallback(() => {
     setProgress(0);
@@ -37,12 +47,15 @@ export default function MusicPlayerApp() {
 
   useEffect(() => {
     if (playing) {
+      synthRef.current?.play(track.id);
       intervalRef.current = window.setInterval(() => {
         setProgress(p => { if (p >= track.duration) { if (repeat) return 0; next(); return 0; } return p + 1; });
       }, 1000);
+    } else {
+      synthRef.current?.pause();
     }
     return () => { if (intervalRef.current) window.clearInterval(intervalRef.current); };
-  }, [playing, track.duration, repeat, next]);
+  }, [playing, track.id, track.duration, repeat, next]);
 
   const pct = Math.round((progress / track.duration) * 100);
 
@@ -57,7 +70,7 @@ export default function MusicPlayerApp() {
         </div>
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           {TRACKS.map((t, i) => (
-            <button key={t.id} onClick={() => { setTrackIdx(i); setProgress(0); setPlaying(true); }}
+            <button key={t.id} onClick={() => { setTrackIdx(i); setProgress(0); setPlaying(true); synthRef.current?.play(t.id); }}
               className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition ${
                 i === trackIdx ? 'bg-accent-500/15 border-l-2 border-accent-500' : 'hover:bg-white/4 border-l-2 border-transparent'
               }`}>
@@ -118,7 +131,7 @@ export default function MusicPlayerApp() {
             <button onClick={() => setShuffle(v => !v)} className={`transition ${shuffle ? 'text-accent-400' : 'text-white/25 hover:text-white/50'}`}>
               <Shuffle className="h-4 w-4" />
             </button>
-            <button onClick={() => { setProgress(0); setTrackIdx(i => (i - 1 + TRACKS.length) % TRACKS.length); }} className="text-white/60 hover:text-white transition">
+            <button onClick={() => { setProgress(0); setTrackIdx(i => { const ni = (i - 1 + TRACKS.length) % TRACKS.length; synthRef.current?.play(TRACKS[ni].id); return ni; }); }} className="text-white/60 hover:text-white transition">
               <SkipBack className="h-5 w-5" />
             </button>
             <button onClick={() => setPlaying(v => !v)}
@@ -126,7 +139,7 @@ export default function MusicPlayerApp() {
               style={{ background: 'linear-gradient(135deg, var(--accent-400), var(--accent-600))', boxShadow: '0 6px 24px color-mix(in srgb, var(--accent-500) 50%, transparent)' }}>
               {playing ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
             </button>
-            <button onClick={next} className="text-white/60 hover:text-white transition">
+            <button onClick={() => { next(); synthRef.current?.play(TRACKS[(trackIdx + 1) % TRACKS.length].id); }} className="text-white/60 hover:text-white transition">
               <SkipForward className="h-5 w-5" />
             </button>
             <button onClick={() => setRepeat(v => !v)} className={`transition ${repeat ? 'text-accent-400' : 'text-white/25 hover:text-white/50'}`}>

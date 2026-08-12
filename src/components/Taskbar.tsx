@@ -10,6 +10,7 @@ import { useWindowManager } from '../context/WindowManagerContext';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { supabase } from '../lib/supabase';
+import { playSfx } from '../lib/sfx';
 import type { AppId, InstalledApp } from '../lib/types';
 
 type IconName = keyof typeof LucideIcons;
@@ -95,6 +96,7 @@ export default function Taskbar() {
   const filtered = APPS.filter(a => a.label.toLowerCase().includes(search.toLowerCase()));
   const initial = username?.[0]?.toUpperCase() ?? '?';
   const openOne = (id: AppId, payload?: Record<string, unknown>) => {
+    playSfx('open');
     openApp(id, payload ? { payload, title: payload.name as string, icon: payload.icon as string, width: 1000, height: 680 } : undefined);
     setStartOpen(false);
     setSearch('');
