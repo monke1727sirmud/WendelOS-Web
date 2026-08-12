@@ -26,11 +26,18 @@ export function useSettings() {
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const { user, authState } = useAuth();
+  const { user, authState, isDevPreview } = useAuth();
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
 
   const loadSettings = useCallback(async (uid: string) => {
+    if (isDevPreview) {
+      setSettings(DEFAULT_SETTINGS);
+      setSfxEnabled(DEFAULT_SETTINGS.sound_enabled);
+      setSfxVolume(DEFAULT_SETTINGS.sfx_volume / 100);
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase
       .from('user_settings')
       .select('wallpaper, theme, accent_color, auto_lock_minutes, sound_enabled, sfx_volume')
@@ -56,7 +63,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       }
     }
     setLoading(false);
-  }, []);
+  }, [isDevPreview]);
 
   useEffect(() => {
     if (authState === 'authenticated' && user) {
@@ -75,6 +82,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setSettings(next);
       if (patch.sound_enabled !== undefined) setSfxEnabled(patch.sound_enabled);
       if (patch.sfx_volume !== undefined) setSfxVolume(patch.sfx_volume / 100);
+      if (isDevPreview) return;
       await supabase.from('user_settings').upsert({
         user_id: user.id,
         wallpaper: next.wallpaper,
@@ -85,7 +93,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         sfx_volume: next.sfx_volume,
       });
     },
-    [user, settings]
+    [user, settings, isDevPreview]
   );
 
   return (
