@@ -94,7 +94,7 @@ export default function MusicPlayerApp() {
               <h3 className="text-base font-semibold text-white">{track.title}</h3>
               <p className="text-xs text-white/40">{track.artist} · {track.album}</p>
             </div>
-            <button onClick={() => setLiked(prev => { const n = new Set(prev); n.has(track.id) ? n.delete(track.id) : n.add(track.id); return n; })}
+            <button onClick={() => setLiked(prev => { const n = new Set(prev); if (n.has(track.id)) n.delete(track.id); else n.add(track.id); return n; })}
               className="mt-0.5 transition hover:scale-110">
               <Heart className={`h-5 w-5 transition ${liked.has(track.id) ? 'fill-rose-400 text-rose-400' : 'text-white/20 hover:text-white/40'}`} />
             </button>

@@ -209,7 +209,7 @@ export default function StoreApp() {
                           <ExternalLink className="h-3.5 w-3.5" />
                         </button>
                       )}
-                      <button onClick={e => { e.stopPropagation(); inst ? void uninstall(app) : void install(app); }}
+                      <button onClick={e => { e.stopPropagation(); if (inst) void uninstall(app); else void install(app); }}
                         disabled={isInstalling}
                         className={`flex h-7 min-w-[70px] items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition ${
                           inst
