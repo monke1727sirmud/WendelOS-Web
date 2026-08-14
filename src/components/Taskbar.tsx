@@ -5,12 +5,13 @@ import {
   Wifi, Volume2, BatteryFull, BatteryLow,
   TerminalSquare, ChevronUp, Bell, Bluetooth,
   Sun, Moon, Settings2, X, BatteryMedium,
+  BellOff,
 } from 'lucide-react';
 import { useWindowManager } from '../context/WindowManagerContext';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { supabase } from '../lib/supabase';
-import { playSfx } from '../lib/sfx';
+import { playSfx, setSfxVolume } from '../lib/sfx';
 import type { AppId, InstalledApp } from '../lib/types';
 
 type IconName = keyof typeof LucideIcons;
@@ -58,14 +59,18 @@ export default function Taskbar() {
   const [trayOpen, setTrayOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [time, setTime] = useState(new Date());
-  const [notifications] = useState(2);
   const [brightness, setBrightness] = useState(80);
-  const [volume, setVolume] = useState(65);
   const [wifiOn, setWifiOn] = useState(true);
   const [btOn, setBtOn] = useState(false);
+  const [dndOn, setDndOn] = useState(false);
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const battery = useBattery();
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Sync sfx volume from settings
+  useEffect(() => {
+    setSfxVolume(settings.sfx_volume / 100);
+  }, [settings.sfx_volume]);
 
   useEffect(() => {
     if (isDevPreview) { setInstalledApps([]); return; }
@@ -102,30 +107,53 @@ export default function Taskbar() {
     setSearch('');
   };
 
+  const toggleTray = () => { setTrayOpen(v => !v); setStartOpen(false); };
+  const toggleStart = () => { setStartOpen(v => !v); setTrayOpen(false); };
+
   return (
     <>
+      {/* Brightness overlay — dims the entire screen */}
+      <div
+        className="fixed inset-0 z-[700] pointer-events-none transition-opacity duration-300"
+        style={{ background: 'black', opacity: (100 - brightness) / 200 }}
+      />
+
       {/* ── Android-style status bar ── */}
       <div className="fixed top-0 left-0 right-0 z-[600] flex h-7 items-center justify-between bg-black/70 px-4 backdrop-blur-md select-none">
-        <div className="flex items-center gap-1.5">
+        <button
+          onClick={toggleStart}
+          className="flex items-center gap-1.5 transition hover:opacity-80"
+        >
           <TerminalSquare className="h-3 w-3 text-white/50" />
           <span className="font-mono text-[10px] font-semibold tracking-widest text-white/40 uppercase">WendelOS</span>
           {isDevPreview && (
             <span className="ml-1.5 rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-px font-mono text-[8px] font-bold tracking-wider text-amber-300/70">DEV PREVIEW</span>
           )}
-        </div>
+        </button>
         <div className="absolute left-1/2 -translate-x-1/2 text-[11px] font-medium text-white/45 truncate max-w-xs">
           {activeId ? (windows.find(w => w.id === activeId)?.title ?? '') : ''}
         </div>
         <div className="flex items-center gap-2 text-white/55">
-          {notifications > 0 && (
-            <div className="relative">
-              <Bell className="h-3 w-3" />
-              <span className="absolute -top-1 -right-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 text-[7px] font-bold text-white">{notifications}</span>
-            </div>
-          )}
-          <Wifi className={`h-3 w-3 ${wifiOn ? 'text-white/55' : 'text-white/20'}`} />
-          <BatteryFull className="h-3 w-3" />
-          <span className="tabular-nums text-[10px]">{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+          {/* Bell — opens tray (notifications) */}
+          <button onClick={toggleTray} className="relative transition hover:opacity-80" title="Notifications">
+            {dndOn ? <BellOff className="h-3 w-3 text-white/30" /> : <Bell className="h-3 w-3" />}
+            {!dndOn && (
+              <span className="absolute -top-1 -right-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 text-[7px] font-bold text-white">2</span>
+            )}
+          </button>
+          {/* Wifi — opens tray */}
+          <button onClick={toggleTray} className="transition hover:opacity-80" title="Wi-Fi settings">
+            <Wifi className={`h-3 w-3 ${wifiOn ? 'text-white/55' : 'text-white/20'}`} />
+          </button>
+          {/* Battery — opens tray */}
+          <button onClick={toggleTray} className="flex items-center gap-1 transition hover:opacity-80" title="Battery">
+            <BatteryIcon level={battery} />
+            <span className="text-[9px] tabular-nums text-white/40">{battery}%</span>
+          </button>
+          {/* Time — opens tray */}
+          <button onClick={toggleTray} className="transition hover:opacity-80" title="Quick settings">
+            <span className="tabular-nums text-[10px]">{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+          </button>
         </div>
       </div>
 
@@ -266,10 +294,10 @@ export default function Taskbar() {
             {/* Toggle grid — Android tiles */}
             <div className="grid grid-cols-4 gap-2 border-b border-white/8 p-3">
               {[
-                { label: 'Wi-Fi',     icon: Wifi,      active: wifiOn,              onToggle: () => setWifiOn(v => !v) },
-                { label: 'Bluetooth', icon: Bluetooth, active: btOn,                onToggle: () => setBtOn(v => !v) },
-                { label: 'Dark Mode', icon: Moon,      active: settings.theme === 'dark', onToggle: () => void updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' }) },
-                { label: 'Do Not Disturb', icon: Bell, active: false,              onToggle: () => {} },
+                { label: 'Wi-Fi',     icon: Wifi,      active: wifiOn,                              onToggle: () => { setWifiOn(v => !v); playSfx('toggle'); } },
+                { label: 'Bluetooth', icon: Bluetooth, active: btOn,                                onToggle: () => { setBtOn(v => !v); playSfx('toggle'); } },
+                { label: 'Dark Mode', icon: Moon,      active: settings.theme === 'dark',          onToggle: () => { void updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' }); playSfx('toggle'); } },
+                { label: 'Do Not Disturb', icon: dndOn ? BellOff : Bell, active: dndOn,             onToggle: () => { setDndOn(v => !v); playSfx('toggle'); } },
               ].map(({ label, icon: Ico, active, onToggle }) => (
                 <button key={label} onClick={onToggle}
                   className={`flex flex-col items-center gap-1.5 rounded-xl p-2.5 text-center transition ${
@@ -283,19 +311,28 @@ export default function Taskbar() {
 
             {/* Sliders */}
             <div className="space-y-3 border-b border-white/8 p-4">
-              {[
-                { icon: Sun,     value: brightness, onChange: (v: number) => setBrightness(v), label: 'Brightness' },
-                { icon: Volume2, value: volume,     onChange: (v: number) => setVolume(v),     label: 'Volume' },
-              ].map(({ icon: Ico, value, onChange, label }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <Ico className="h-3.5 w-3.5 shrink-0 text-white/35" />
-                  <div className="relative flex-1 h-1.5 rounded-full bg-white/8 cursor-pointer"
-                    onClick={e => { const r = e.currentTarget.getBoundingClientRect(); onChange(Math.round(((e.clientX - r.left) / r.width) * 100)); }}>
-                    <div className="h-full rounded-full bg-accent-500/70 transition-all" style={{ width: `${value}%` }} />
-                  </div>
-                  <span className="w-7 text-right text-[10px] tabular-nums text-white/25">{value}</span>
+              {/* Brightness */}
+              <div className="flex items-center gap-3">
+                <Sun className="h-3.5 w-3.5 shrink-0 text-white/35" />
+                <div className="relative flex-1 h-1.5 rounded-full bg-white/8 cursor-pointer"
+                  onClick={e => { const r = e.currentTarget.getBoundingClientRect(); setBrightness(Math.round(((e.clientX - r.left) / r.width) * 100)); }}>
+                  <div className="h-full rounded-full bg-accent-500/70 transition-all" style={{ width: `${brightness}%` }} />
                 </div>
-              ))}
+                <span className="w-7 text-right text-[10px] tabular-nums text-white/25">{brightness}</span>
+              </div>
+              {/* Volume — synced with system sound settings */}
+              <div className="flex items-center gap-3">
+                <Volume2 className="h-3.5 w-3.5 shrink-0 text-white/35" />
+                <div className="relative flex-1 h-1.5 rounded-full bg-white/8 cursor-pointer"
+                  onClick={e => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    const v = Math.round(((e.clientX - r.left) / r.width) * 100);
+                    void updateSettings({ sfx_volume: v });
+                  }}>
+                  <div className="h-full rounded-full bg-accent-500/70 transition-all" style={{ width: `${settings.sfx_volume}%` }} />
+                </div>
+                <span className="w-7 text-right text-[10px] tabular-nums text-white/25">{settings.sfx_volume}</span>
+              </div>
             </div>
 
             {/* Battery + time + settings shortcut */}
@@ -304,9 +341,10 @@ export default function Taskbar() {
                 <BatteryIcon level={battery} />
                 <span>{battery}%</span>
               </div>
-              <div className="text-xs text-white/25 tabular-nums">
+              <button onClick={() => { openApp('calendar'); setTrayOpen(false); }}
+                className="text-xs text-white/25 tabular-nums transition hover:text-white/50">
                 {time.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })}
-              </div>
+              </button>
               <button onClick={() => { openApp('settings'); setTrayOpen(false); }}
                 className="flex items-center gap-1 text-[10px] text-white/30 hover:text-white/60 transition">
                 <Settings2 className="h-3 w-3" /> More
@@ -321,7 +359,7 @@ export default function Taskbar() {
         {/* Windows Start button */}
         <div className="pointer-events-auto">
           <button
-            onClick={() => { setStartOpen(v => !v); setTrayOpen(false); }}
+            onClick={toggleStart}
             className={`flex h-11 items-center gap-2 rounded-xl px-3 transition-all ${
               startOpen
                 ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/35'
@@ -392,7 +430,7 @@ export default function Taskbar() {
         {/* System tray — bottom right */}
         <div className="pointer-events-auto">
           <button
-            onClick={() => { setTrayOpen(v => !v); setStartOpen(false); }}
+            onClick={toggleTray}
             className={`flex h-11 items-center gap-2.5 rounded-xl px-3 transition-all ${
               trayOpen
                 ? 'border border-accent-500/40 bg-accent-500/15 text-accent-300'
