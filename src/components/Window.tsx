@@ -107,7 +107,7 @@ export default function Window({ win, children }: { win: WindowInstance; childre
       <div
         onMouseDown={handleDragStart}
         onDoubleClick={() => toggleMaximize(win.id)}
-        className={`group flex h-[38px] shrink-0 select-none items-center px-3 transition-colors ${
+        className={`group relative flex h-[38px] shrink-0 select-none items-center px-3 transition-colors ${
           isActive
             ? 'border-b border-white/10'
             : 'border-b border-white/5'
@@ -119,9 +119,12 @@ export default function Window({ win, children }: { win: WindowInstance; childre
           backdropFilter: 'blur(40px) saturate(180%)',
         }}
       >
-        {/* macOS traffic lights */}
+        {/* Left spacer to balance right-aligned title */}
+        <div className="shrink-0" style={{ width: '40%' }} />
+
+        {/* Centered traffic lights */}
         <div
-          className="flex items-center gap-1.5 mr-3 shrink-0"
+          className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 shrink-0"
           onMouseEnter={() => setHoverControls(true)}
           onMouseLeave={() => setHoverControls(false)}
         >
@@ -152,16 +155,13 @@ export default function Window({ win, children }: { win: WindowInstance; childre
           </button>
         </div>
 
-        {/* Centered title — macOS style */}
-        <div className="flex flex-1 items-center justify-center gap-1.5 overflow-hidden min-w-0">
+        {/* Right-aligned title */}
+        <div className="flex flex-1 items-center justify-end gap-1.5 overflow-hidden min-w-0">
           <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-white/50' : 'text-white/25'}`} />
           <span className={`truncate text-[12px] font-medium tracking-tight ${isActive ? 'text-white/75' : 'text-white/35'}`}>
             {win.title}
           </span>
         </div>
-
-        {/* Spacer to balance traffic lights */}
-        <div className="w-[54px] shrink-0" />
       </div>
 
       {/* Content */}
