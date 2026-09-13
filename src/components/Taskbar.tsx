@@ -58,7 +58,7 @@ export default function Taskbar() {
   const [trayOpen, setTrayOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [time, setTime] = useState(new Date());
-  const [notifications] = useState(2);
+  const [notifications, setNotifications] = useState(2);
   const [brightness, setBrightness] = useState(80);
   const [volume, setVolume] = useState(65);
   const [wifiOn, setWifiOn] = useState(true);
@@ -131,7 +131,7 @@ export default function Taskbar() {
           {dnd ? (
             <BellOff className="h-3 w-3 text-white/20" />
           ) : notifications > 0 ? (
-            <div className="relative">
+            <div className="relative" onClick={(e) => { e.stopPropagation(); setNotifications(0); }} title="Click to dismiss">
               <Bell className="h-3 w-3" />
               <span className="absolute -top-1 -right-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 text-[7px] font-bold text-white">{notifications}</span>
             </div>
@@ -256,7 +256,7 @@ export default function Taskbar() {
                 {[
                   { icon: LockIcon,  title: 'Lock',      action: lock,              hover: 'hover:bg-white/10 hover:text-white' },
                   { icon: LogOut,    title: 'Sign Out',  action: () => void signOut(), hover: 'hover:bg-amber-500/20 hover:text-amber-300' },
-                  { icon: Power,     title: 'Power Off', action: () => void signOut(), hover: 'hover:bg-red-500/20 hover:text-red-400' },
+                  { icon: Power,     title: 'Power Off', action: () => void signOut().then(() => window.location.reload()), hover: 'hover:bg-red-500/20 hover:text-red-400' },
                 ].map(({ icon: Ico, title, action, hover }) => (
                   <button key={title} onClick={action} title={title}
                     className={`flex h-7 w-7 items-center justify-center rounded-lg text-white/35 transition ${hover}`}>
