@@ -4,6 +4,7 @@ import {
   Volume2, VolumeX, ListMusic, Heart, Search, Loader2, X, Globe,
 } from 'lucide-react';
 import { SynthPlayer } from '../lib/synthAudio';
+import { generateAlbumArt } from '../lib/albumArt';
 
 interface Track {
   id: number;
@@ -17,12 +18,12 @@ interface Track {
 }
 
 const TRACKS: Track[] = [
-  { id: 1, title: 'Midnight Protocol',  artist: 'Neon Cipher',     album: 'Terminal Velocity',    duration: 214, cover: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=400', source: 'synth' },
-  { id: 2, title: 'Root Access',        artist: 'The Sudoers',     album: 'Privilege Escalation', duration: 187, cover: 'https://images.pexels.com/photos/1370549/pexels-photo-1370549.jpeg?auto=compress&cs=tinysrgb&w=400', source: 'synth' },
-  { id: 3, title: 'Kernel Panic',       artist: 'OOM Killer',      album: 'Segmentation Fault',   duration: 245, cover: 'https://images.pexels.com/photos/1611548/pexels-photo-1611548.jpeg?auto=compress&cs=tinysrgb&w=400', source: 'synth' },
-  { id: 4, title: 'Tuxedo Junction',    artist: 'Penguin Quartet', album: 'Ice Cold Jazz',        duration: 198, cover: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg?auto=compress&cs=tinysrgb&w=400', source: 'synth' },
-  { id: 5, title: 'Daemon Dance',       artist: 'Fork Bomb',       album: 'Process Tree',         duration: 172, cover: 'https://images.pexels.com/photos/1530028/pexels-photo-1530028.jpeg?auto=compress&cs=tinysrgb&w=400', source: 'synth' },
-  { id: 6, title: 'Inotify',            artist: 'File Watchers',  album: 'Event Loop',           duration: 233, cover: 'https://images.pexels.com/photos/1402754/pexels-photo-1402754.jpeg?auto=compress&cs=tinysrgb&w=400', source: 'synth' },
+  { id: 1, title: 'Midnight Protocol',  artist: 'Neon Cipher',     album: 'Terminal Velocity',    duration: 214, cover: generateAlbumArt(1, 'Midnight Protocol'),  source: 'synth' },
+  { id: 2, title: 'Root Access',        artist: 'The Sudoers',     album: 'Privilege Escalation', duration: 187, cover: generateAlbumArt(2, 'Root Access'),        source: 'synth' },
+  { id: 3, title: 'Kernel Panic',       artist: 'OOM Killer',      album: 'Segmentation Fault',   duration: 245, cover: generateAlbumArt(3, 'Kernel Panic'),       source: 'synth' },
+  { id: 4, title: 'Tuxedo Junction',    artist: 'Penguin Quartet', album: 'Ice Cold Jazz',        duration: 198, cover: generateAlbumArt(4, 'Tuxedo Junction'),    source: 'synth' },
+  { id: 5, title: 'Daemon Dance',       artist: 'Fork Bomb',       album: 'Process Tree',         duration: 172, cover: generateAlbumArt(5, 'Daemon Dance'),       source: 'synth' },
+  { id: 6, title: 'Inotify',            artist: 'File Watchers',  album: 'Event Loop',           duration: 233, cover: generateAlbumArt(6, 'Inotify'),            source: 'synth' },
 ];
 
 interface AudiusTrack {

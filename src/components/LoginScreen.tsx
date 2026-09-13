@@ -5,6 +5,7 @@ import {
   BatteryFull, Bell, Power, LogIn, UserPlus,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { generateWallpaper } from '../lib/albumArt';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
@@ -138,7 +139,7 @@ export default function LoginScreen() {
       {/* Wallpaper — same style as desktop wallpaper system */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: 'url(https://images.pexels.com/photos/1525041/pexels-photo-1525041.jpeg?auto=compress&cs=tinysrgb&w=1920)' }}
+        style={{ backgroundImage: `url("${generateWallpaper()}")` }}
       />
       <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
 
