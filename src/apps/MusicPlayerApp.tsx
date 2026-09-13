@@ -361,9 +361,8 @@ export default function MusicPlayerApp() {
                   <span className="flex-1 text-xs font-semibold text-white/60">Results ({searchResults.length})</span>
                 </div>
                 <div className="flex-1 overflow-y-auto scrollbar-thin">
-                  {searchResults.map((t, i) => {
+                  {searchResults.map((t) => {
                     const inLib = remoteLibrary.some(x => x.id === t.id);
-                    void i;
                     return (
                       <div
                         key={t.id}

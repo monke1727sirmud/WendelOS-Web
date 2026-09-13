@@ -77,7 +77,8 @@ export default function WebAppViewer({ url, name, icon, color }: Props) {
   // Detect iframe load failure after timeout
   useEffect(() => {
     const timer = setTimeout(() => {
-      // If still loading after 15s, might be blocked
+      setLoading(false);
+      setFailed(true);
     }, 15000);
     return () => clearTimeout(timer);
   }, [iframeKey]);

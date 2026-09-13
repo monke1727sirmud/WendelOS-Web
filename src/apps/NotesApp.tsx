@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Loader2, StickyNote, Search, Pin, MoreHorizontal, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Loader2, StickyNote, Search, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Note } from '../lib/types';
 import { useQuota } from '../context/QuotaContext';
@@ -134,12 +134,6 @@ export default function NotesApp() {
               ))}
             </div>
             <div className="ml-auto flex items-center gap-1">
-              <button className="flex h-7 w-7 items-center justify-center rounded-md text-white/30 hover:bg-white/8 hover:text-white transition">
-                <Pin className="h-3.5 w-3.5" />
-              </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded-md text-white/30 hover:bg-white/8 hover:text-white transition">
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </button>
               <button onClick={() => void handleDelete(activeNote.id)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-white/30 transition hover:bg-red-500/20 hover:text-red-400">
                 <Trash2 className="h-3.5 w-3.5" />

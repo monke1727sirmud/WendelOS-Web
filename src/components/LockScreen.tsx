@@ -169,7 +169,7 @@ export default function LockScreen() {
             </button>
             <div className="h-3 w-px bg-white/10" />
             <button
-              onClick={() => void signOut()}
+              onClick={() => { void signOut().then(() => window.location.reload()); }}
               className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] text-white/30 transition hover:bg-red-500/15 hover:text-red-400"
             >
               <Power className="h-3 w-3" />

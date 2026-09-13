@@ -171,10 +171,16 @@ export default function Desktop() {
                 setCtx(null);
               }} />
               {allIcons.find(i => i.id === ctx.iconId)?.webPayload && (
-                <CtxItem icon={LucideIcons.Trash2} label="Remove from Desktop" onClick={() => setCtx(null)} muted />
+                <CtxItem icon={LucideIcons.Trash2} label="Remove from Desktop" onClick={() => {
+                  const icon = allIcons.find(i => i.id === ctx.iconId);
+                  if (icon?.webPayload) {
+                    const appId = icon.id.replace('webapp-', '');
+                    void supabase.from('installed_apps').delete().eq('app_id', appId)
+                      .then(() => void loadInstalled());
+                  }
+                  setCtx(null);
+                }} muted />
               )}
-              <div className="my-1 border-t border-white/8" />
-              <CtxItem icon={LucideIcons.Info} label="Properties" onClick={() => setCtx(null)} muted />
             </>
           ) : (
             <>

@@ -169,7 +169,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sub.subscription.unsubscribe();
       clearLockTimer();
       events.forEach((e) => window.removeEventListener(e, activityHandler));
-      void init;
     };
   }, [clearLockTimer, resetActivity, loadUsername]);
 

@@ -55,6 +55,7 @@ export default function FilesApp() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [quotaError, setQuotaError] = useState<string | null>(null);
+  const [sidebarFilter, setSidebarFilter] = useState<string | null>(null);
 
   const loadFiles = useCallback(async (parentId: string | null) => {
     setLoading(true);
@@ -133,7 +134,18 @@ export default function FilesApp() {
     else openApp('editor', { title: file.name, payload: { fileId: file.id, fileName: file.name } });
   };
 
-  const filtered = files.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = files.filter(f => {
+    if (sidebarFilter === 'recents') {
+      return new Date(f.updated_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000;
+    }
+    if (sidebarFilter === 'starred') {
+      return f.name.startsWith('★');
+    }
+    if (sidebarFilter === 'tags') {
+      return f.name.includes('#');
+    }
+    return f.name.toLowerCase().includes(search.toLowerCase());
+  });
   const selectedFile = files.find(f => f.id === selected);
 
   const storageFrac = fraction('storage');
@@ -158,7 +170,9 @@ export default function FilesApp() {
                   <button
                     key={item.label}
                     onClick={() => {
-                      if (item.id === null) { setCurrentParent(null); setBreadcrumb([{ id: null, name: 'Home' }]); }
+                      if (item.id === null) { setCurrentParent(null); setBreadcrumb([{ id: null, name: 'Home' }]); setSidebarFilter(null); }
+                      else if (item.id === 'disk') { setCurrentParent(null); setBreadcrumb([{ id: null, name: 'WendelOS Disk' }]); setSidebarFilter(null); }
+                      else { setSidebarFilter(item.id); }
                     }}
                     className={`flex w-full items-center gap-2 rounded-md mx-1.5 px-2 py-1.5 text-xs transition ${
                       isActive ? 'bg-accent-500/20 text-accent-300' : 'text-white/50 hover:bg-white/6 hover:text-white/80'

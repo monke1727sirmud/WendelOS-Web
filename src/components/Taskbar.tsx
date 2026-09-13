@@ -63,6 +63,7 @@ export default function Taskbar() {
   const [volume, setVolume] = useState(65);
   const [wifiOn, setWifiOn] = useState(true);
   const [btOn, setBtOn] = useState(false);
+  const [dnd, setDnd] = useState(false);
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const battery = useBattery();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -104,6 +105,12 @@ export default function Taskbar() {
 
   return (
     <>
+      {/* Brightness overlay */}
+      {brightness < 100 && (
+        <div className="fixed inset-0 z-[700] pointer-events-none transition-opacity"
+          style={{ background: 'black', opacity: (100 - brightness) / 200 }} />
+      )}
+
       {/* ── Android-style status bar ── */}
       <div className="fixed top-0 left-0 right-0 z-[600] flex h-7 items-center justify-between bg-black/70 px-4 backdrop-blur-md select-none">
         <div className="flex items-center gap-1.5">
@@ -117,7 +124,7 @@ export default function Taskbar() {
           {activeId ? (windows.find(w => w.id === activeId)?.title ?? '') : ''}
         </div>
         <div className="flex items-center gap-2 text-white/55">
-          {notifications > 0 && (
+          {notifications > 0 && !dnd && (
             <div className="relative">
               <Bell className="h-3 w-3" />
               <span className="absolute -top-1 -right-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 text-[7px] font-bold text-white">{notifications}</span>
@@ -269,7 +276,7 @@ export default function Taskbar() {
                 { label: 'Wi-Fi',     icon: Wifi,      active: wifiOn,              onToggle: () => setWifiOn(v => !v) },
                 { label: 'Bluetooth', icon: Bluetooth, active: btOn,                onToggle: () => setBtOn(v => !v) },
                 { label: 'Dark Mode', icon: Moon,      active: settings.theme === 'dark', onToggle: () => void updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' }) },
-                { label: 'Do Not Disturb', icon: Bell, active: false,              onToggle: () => {} },
+                { label: 'Do Not Disturb', icon: Bell, active: dnd,                onToggle: () => setDnd(v => !v) },
               ].map(({ label, icon: Ico, active, onToggle }) => (
                 <button key={label} onClick={onToggle}
                   className={`flex flex-col items-center gap-1.5 rounded-xl p-2.5 text-center transition ${
