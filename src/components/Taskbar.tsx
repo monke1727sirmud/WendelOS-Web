@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 import {
   Search, Lock as LockIcon, LogOut, Power,
   Wifi, Volume2, BatteryFull, BatteryLow,
-  TerminalSquare, ChevronUp, Bell, Bluetooth,
+  TerminalSquare, ChevronUp, Bell, BellOff, Bluetooth,
   Sun, Moon, Settings2, X, BatteryMedium,
 } from 'lucide-react';
 import { useWindowManager } from '../context/WindowManagerContext';
@@ -123,17 +123,25 @@ export default function Taskbar() {
         <div className="absolute left-1/2 -translate-x-1/2 text-[11px] font-medium text-white/45 truncate max-w-xs">
           {activeId ? (windows.find(w => w.id === activeId)?.title ?? '') : ''}
         </div>
-        <div className="flex items-center gap-2 text-white/55">
-          {notifications > 0 && !dnd && (
+        <button
+          onClick={() => { setTrayOpen(v => !v); setStartOpen(false); }}
+          className="flex items-center gap-2 text-white/55 transition hover:text-white/80"
+          title="Quick Settings"
+        >
+          {dnd ? (
+            <BellOff className="h-3 w-3 text-white/20" />
+          ) : notifications > 0 ? (
             <div className="relative">
               <Bell className="h-3 w-3" />
               <span className="absolute -top-1 -right-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 text-[7px] font-bold text-white">{notifications}</span>
             </div>
-          )}
-          <Wifi className={`h-3 w-3 ${wifiOn ? 'text-white/55' : 'text-white/20'}`} />
-          <BatteryFull className="h-3 w-3" />
+          ) : null}
+          {btOn && <Bluetooth className="h-3 w-3 text-blue-400/70" />}
+          <Wifi className={`h-3 w-3 ${wifiOn ? '' : 'opacity-30'}`} />
+          <BatteryIcon level={battery} />
+          <span className="tabular-nums text-[10px]">{battery}%</span>
           <span className="tabular-nums text-[10px]">{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
-        </div>
+        </button>
       </div>
 
       {/* ── Panels (Start + Quick Settings) — single ref wrapper ── */}
